@@ -24,3 +24,16 @@ output "vpc_id" {
 output "private_subnet_ids" {
   value = aws_subnet.private[*].id
 }
+
+output "evidence_vault" {
+  value       = aws_s3_bucket.vault.id
+  description = "Object Lock evidence vault."
+}
+
+output "data_key_arn" {
+  value = aws_kms_key.data.arn
+}
+
+output "evidence_key_arn" {
+  value = aws_kms_key.evidence_key.arn
+}

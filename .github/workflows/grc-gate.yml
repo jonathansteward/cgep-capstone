@@ -1,6 +1,6 @@
 # Layer 3: plan -> Conftest gate -> apply on merge -> Cosign sign -> vault upload.
 # Adapted from cgep Labs 4.3 and 4.4.
-name: grc-pipeline
+name: grc-gate
 
 on:
   pull_request:

@@ -3,9 +3,9 @@
     "uuid": "00eb29bf-cc32-5748-b8d7-442f86ba6fae",
     "metadata": {
       "title": "Acme Health intake - SOC 2 profile",
-      "last-modified": "2026-09-20T01:51:25+00:00",
+      "last-modified": "2026-09-20T02:00:54+00:00",
       "version": "1.0.0",
-      "oscal-version": "1.1.2"
+      "oscal-version": "1.2.1"
     },
     "imports": [
       {

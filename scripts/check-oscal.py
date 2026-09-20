@@ -8,7 +8,7 @@
 """
 import json, os, re, sys
 
-c = json.load(open("oscal/component-definition.json"))["component-definition"]
+c = json.load(open("oscal/components/acme-health-intake.json"))["component-definition"]
 cat = json.load(open("oscal/catalogs/soc2-tsc-catalog.json"))["catalog"]
 prof = json.load(open("oscal/profiles/acme-soc2-profile.json"))["profile"]
 cfg = json.load(open("policies/fixtures/pass.json"))["configuration"]["root_module"]["resources"]

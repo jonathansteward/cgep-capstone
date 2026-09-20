@@ -1,0 +1,131 @@
+# Layer 3: plan -> Conftest gate -> apply on merge -> Cosign sign -> vault upload.
+# Adapted from cgep Labs 4.3 and 4.4.
+name: grc-pipeline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write # AWS OIDC + Cosign keyless
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  plan-gate:
+    runs-on: ubuntu-latest
+    outputs:
+      gate: ${{ steps.gate.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # PRs get the metadata-only plan role; main gets the apply role.
+          role-to-assume: ${{ github.event_name == 'pull_request' && vars.AWS_PLAN_ROLE_ARN || vars.AWS_APPLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.15"
+          terraform_wrapper: false
+
+      - name: Install Conftest
+        run: |
+          curl -fsSL https://github.com/open-policy-agent/conftest/releases/download/v0.56.0/conftest_0.56.0_Linux_x86_64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin conftest
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Terraform plan
+        working-directory: terraform
+        run: |
+          terraform init -input=false
+          terraform fmt -check -recursive
+          terraform validate
+          terraform plan -input=false -lock=false -out=tfplan -no-color | tee plan.txt
+
+      - name: Collect evidence
+        run: |
+          mkdir -p evidence/plan
+          cp terraform/plan.txt evidence/plan/
+          ( cd terraform && terraform show -json tfplan ) > evidence/plan/plan.json
+          git log -1 --pretty=full > evidence/plan/commit.txt
+          terraform version > evidence/plan/terraform-version.txt
+
+      - name: Policy suite self-test (gap regression)
+        run: python3 scripts/gap-regression.py | tee evidence/plan/gap-regression.txt
+
+      - name: Conftest policy gate
+        id: gate
+        continue-on-error: true
+        run: scripts/policy-gate.sh --plan evidence/plan/plan.json --evidence-dir evidence/plan/gate
+
+      - name: Sign and upload to evidence vault
+        if: always()
+        env:
+          VAULT: ${{ vars.EVIDENCE_VAULT }}
+        run: scripts/bundle-sign-upload.sh --dir evidence/plan --stage plan --run-id "${{ github.run_id }}" --vault "$VAULT"
+
+      - name: Keep plan for apply
+        if: github.event_name == 'push' && steps.gate.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: terraform/tfplan
+
+      # The gate result is enforced last so evidence of a blocked change is still vaulted.
+      - name: Enforce gate
+        if: steps.gate.outcome != 'success'
+        run: |
+          echo "::error::SOC 2 policy gate failed. See conftest-results.json in the vault bundle."
+          exit 1
+
+  apply:
+    needs: plan-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.15"
+          terraform_wrapper: false
+
+      - uses: sigstore/cosign-installer@v3
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: terraform
+
+      - name: Terraform apply
+        working-directory: terraform
+        run: |
+          terraform init -input=false
+          terraform apply -input=false -no-color tfplan | tee apply.txt
+
+      - name: Collect post-apply evidence
+        working-directory: terraform
+        run: |
+          mkdir -p ../evidence/apply
+          cp apply.txt ../evidence/apply/
+          terraform output -json > ../evidence/apply/outputs.json
+          terraform state pull | python3 -c 'import json,sys; s=json.load(sys.stdin); print(json.dumps([{"type":r["type"],"name":r["name"]} for r in s["resources"] if r["mode"]=="managed"]))' > ../evidence/apply/resources.json
+          git log -1 --pretty=full > ../evidence/apply/commit.txt
+
+      - name: Sign and upload to evidence vault
+        env:
+          VAULT: ${{ vars.EVIDENCE_VAULT }}
+        run: scripts/bundle-sign-upload.sh --dir evidence/apply --stage apply --run-id "${{ github.run_id }}" --vault "$VAULT"

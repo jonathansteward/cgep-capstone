@@ -1,0 +1,31 @@
+{
+  "profile": {
+    "uuid": "00eb29bf-cc32-5748-b8d7-442f86ba6fae",
+    "metadata": {
+      "title": "Acme Health intake - SOC 2 profile",
+      "last-modified": "2026-09-20T01:47:25+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2"
+    },
+    "imports": [
+      {
+        "href": "../catalogs/soc2-tsc-catalog.json",
+        "include-controls": [
+          {
+            "with-ids": [
+              "cc6.1",
+              "cc6.3",
+              "cc6.6",
+              "cc6.7",
+              "cc7.2",
+              "a1.2"
+            ]
+          }
+        ]
+      }
+    ],
+    "merge": {
+      "as-is": true
+    }
+  }
+}

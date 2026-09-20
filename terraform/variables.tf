@@ -31,6 +31,7 @@ variable "evidence_lock_mode" {
 }
 
 variable "evidence_retention_days" {
-  type    = number
-  default = 1
+  type        = number
+  description = "Default Object Lock retention for new evidence objects (governance mode; applies to objects written after a change)."
+  default     = 30
 }

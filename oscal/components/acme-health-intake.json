@@ -3,9 +3,9 @@
     "uuid": "ab69b2f2-a2df-5fb8-a66c-cc4b8b1916f0",
     "metadata": {
       "title": "Acme Health patient intake API - SOC 2 component definition",
-      "last-modified": "2026-09-20T01:51:25+00:00",
+      "last-modified": "2026-09-20T02:00:54+00:00",
       "version": "1.0.0",
-      "oscal-version": "1.1.2",
+      "oscal-version": "1.2.1",
       "parties": [
         {
           "uuid": "fe7cdb5b-7fd5-5b3e-9be2-e6a184a12863",

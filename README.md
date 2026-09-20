@@ -8,14 +8,16 @@ Design decisions, gap-by-gap results and known limits are in [WRITEUP.md](WRITEU
 |---|---|
 | 1. GRC baseline (Terraform) | `terraform/kms.tf`, `evidence_vault.tf`, `cloudtrail.tf`, `workload_hardening.tf`, in-place edits in `main.tf`; `bootstrap/` (state bucket, GitHub OIDC roles) |
 | 2. OPA policies (Rego) | `policies/soc2/` (9 policies), `policies/fixtures/pass.json`, `scripts/gap-regression.py` |
-| 3. Pipeline (GitHub Actions) | `.github/workflows/grc-pipeline.yml`, `scripts/bundle-sign-upload.sh`, `scripts/verify-evidence.sh` |
-| 4. OSCAL component | `oscal/component-definition.json`, `oscal/profiles/`, `oscal/catalogs/`; regenerate with `scripts/build-oscal.py`, check with `scripts/check-oscal.py` |
+| 3. Pipeline (GitHub Actions) | `.github/workflows/grc-gate.yml`, `scripts/bundle-sign-upload.sh`, `scripts/verify-evidence.sh` |
+| 4. OSCAL component | `oscal/components/acme-health-intake.json`, `oscal/profiles/`, `oscal/catalogs/`; regenerate with `scripts/build-oscal.py`, check with `scripts/check-oscal.py` |
 
 ## Run it
 ```
 make deploy && make test          # deploy the governed workload (uses the S3 backend from bootstrap/)
 python3 scripts/gap-regression.py # each starter gap re-introduced -> policy must fail
 python3 scripts/check-oscal.py    # OSCAL traces to real resources, policies and gaps
+opa test ./policies               # 24 unit tests, pass + fail fixture per policy
+scripts/validate-oscal.sh         # trestle validate (pip install compliance-trestle, Python >= 3.10)
 EVIDENCE_VAULT=<vault> scripts/verify-evidence.sh <run_id> plan|apply
 make destroy
 ```

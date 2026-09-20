@@ -1,5 +1,7 @@
 # Write-up
 
+The declared primary framework for this capstone is the **SOC 2 Trust Services Criteria** (Security and Availability: CC6.1, CC6.3, CC6.6, CC6.7, CC7.2, A1.2). Every Rego policy cites a SOC 2 criterion and the OSCAL component's `control-implementation.source` is the SOC 2 catalog in `oscal/catalogs/`.
+
 ## Why SOC 2
 Acme Health is a 50-person telehealth company whose near-term goal, per WORKLOAD.md, is a SOC 2 Type II report for enterprise customers. The Trust Services Criteria also fit the technical gaps directly: encryption and access (CC6.x), transmission security (CC6.7), monitoring (CC7.2) and recovery (A1.2). CloudTrail plus the signed, immutable evidence vault produce the operating-effectiveness evidence a Type II audit samples over time. HIPAA is the legal baseline for PHI and is cross-referenced in the starter's GAPS.md, but no policy here uses a HIPAA ID as its primary control.
 
@@ -20,7 +22,7 @@ Additional: `cc7_2_cloudtrail` requires a multi-region, log-validated trail.
 ## Design decisions
 - **Policies read plan `configuration`, not `planned_values`.** Values wired by reference (KMS ARNs, bucket IDs) are unknown at plan time. IAM policies are written with `aws_iam_policy_document` because `jsonencode` over references is opaque to the plan.
 - **Regression proof.** `scripts/gap-regression.py` mutates a passing plan fixture to re-introduce each gap and asserts the matching policy fails; it also runs in CI before the gate.
-- **Keyless Cosign.** No signing keys to store. The verifier pins the certificate identity to this repo's `grc-pipeline.yml`.
+- **Keyless Cosign.** No signing keys to store. The verifier pins the certificate identity to this repo's `grc-gate.yml` (earlier runs were signed under its previous name, `grc-pipeline.yml`; the verifier accepts both).
 - **Two pipeline roles.** PRs assume a SecurityAudit-based plan role (no PHI reads, evidence-prefix writes only). Only `main` can assume the apply role, which is explicitly denied DynamoDB data-plane access, reads of the uploads bucket, and vault retention bypass. Trust uses GitHub's immutable owner/repo IDs.
 - **Bootstrap outside the pipeline.** The state bucket and the roles are applied by a human so the pipeline cannot rewrite its own permissions.
 

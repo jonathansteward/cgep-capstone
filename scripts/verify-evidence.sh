@@ -24,7 +24,7 @@ echo "ok  integrity"
 
 cosign verify-blob \
   --bundle "${BUNDLE}.sig.bundle" \
-  --certificate-identity-regexp "^https://github.com/${REPO}/\.github/workflows/grc-pipeline\.yml@" \
+  --certificate-identity-regexp "^https://github.com/${REPO}/\.github/workflows/grc-(pipeline|gate)\.yml@" \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   "$BUNDLE"
 echo "ok  authenticity"

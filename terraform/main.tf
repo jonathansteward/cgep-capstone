@@ -177,35 +177,40 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
 
 # GAP-07 closed: least privilege on the workload data stores (SOC 2 CC6.3).
 # The handler only calls dynamodb:PutItem and s3:PutObject.
-resource "aws_iam_role_policy" "lambda_inline" {
-  name = "intake-data-access"
-  role = aws_iam_role.lambda.id
+data "aws_iam_policy_document" "lambda_inline" {
+  statement {
+    sid       = "IntakeTableWrite"
+    effect    = "Allow"
+    actions   = ["dynamodb:PutItem"]
+    resources = [aws_dynamodb_table.intake.arn]
+  }
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["dynamodb:PutItem"]
-        Resource = aws_dynamodb_table.intake.arn
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["s3:PutObject"]
-        Resource = "${aws_s3_bucket.uploads.arn}/*"
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
-        Resource = aws_kms_key.data.arn
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["sqs:SendMessage"]
-        Resource = aws_sqs_queue.dlq.arn
-      }
-    ]
-  })
+  statement {
+    sid       = "UploadsWrite"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.uploads.arn}/*"]
+  }
+
+  statement {
+    sid       = "DataKeyUse"
+    effect    = "Allow"
+    actions   = ["kms:GenerateDataKey", "kms:Decrypt"]
+    resources = [aws_kms_key.data.arn]
+  }
+
+  statement {
+    sid       = "DlqSend"
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.dlq.arn]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_inline" {
+  name   = "intake-data-access"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.lambda_inline.json
 }
 
 resource "aws_lambda_function" "intake" {

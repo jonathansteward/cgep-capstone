@@ -24,7 +24,7 @@ make destroy
 ## Proof the gate has teeth
 | | Run | Result | Vault evidence |
 |---|---|---|---|
-| PR #1 (merged) | 35481463190 / main push 35481905389 | plan, gate, apply passed | `evidence/runs/35481905389/{plan,apply}/` |
+| PR #1 (merged) | PR run 35481463190; main push 35481905389; latest main push 35482366069 (30-day retention) | plan, gate, apply passed | `evidence/runs/35482366069/{plan,apply}/` (earlier: `35481905389`) |
 | PR #2 (blocked) | 35481966227 | A1.2 policy failed: uploads versioning removed | `evidence/runs/35481966227/plan/` |
 
 All three bundles pass `verify-evidence.sh` (SHA-256, Cosign keyless signature pinned to this repo's workflow, Object Lock retention).

@@ -1,0 +1,2122 @@
+{
+ "configuration": {
+  "provider_config": {
+   "archive": {
+    "full_name": "registry.terraform.io/hashicorp/archive",
+    "name": "archive",
+    "version_constraint": "~> 2.4"
+   },
+   "aws": {
+    "expressions": {
+     "default_tags": [
+      {
+       "tags": {
+        "constant_value": {
+         "DataClass": "phi",
+         "ManagedBy": "terraform",
+         "Project": "acme-health-intake",
+         "Workload": "patient-intake-api"
+        }
+       }
+      }
+     ],
+     "region": {
+      "references": [
+       "var.aws_region"
+      ]
+     }
+    },
+    "full_name": "registry.terraform.io/hashicorp/aws",
+    "name": "aws",
+    "version_constraint": "~> 5.0"
+   },
+   "random": {
+    "full_name": "registry.terraform.io/hashicorp/random",
+    "name": "random",
+    "version_constraint": "~> 3.6"
+   }
+  },
+  "root_module": {
+   "outputs": {
+    "api_url": {
+     "description": "POST /intake endpoint.",
+     "expression": {
+      "references": [
+       "aws_apigatewayv2_api.intake.api_endpoint",
+       "aws_apigatewayv2_api.intake"
+      ]
+     }
+    },
+    "data_key_arn": {
+     "expression": {
+      "references": [
+       "aws_kms_key.data.arn",
+       "aws_kms_key.data"
+      ]
+     }
+    },
+    "evidence_key_arn": {
+     "expression": {
+      "references": [
+       "aws_kms_key.evidence_key.arn",
+       "aws_kms_key.evidence_key"
+      ]
+     }
+    },
+    "evidence_vault": {
+     "description": "Object Lock evidence vault.",
+     "expression": {
+      "references": [
+       "aws_s3_bucket.vault.id",
+       "aws_s3_bucket.vault"
+      ]
+     }
+    },
+    "intake_table": {
+     "description": "DynamoDB table holding patient submissions.",
+     "expression": {
+      "references": [
+       "aws_dynamodb_table.intake.name",
+       "aws_dynamodb_table.intake"
+      ]
+     }
+    },
+    "lambda_function_name": {
+     "expression": {
+      "references": [
+       "aws_lambda_function.intake.function_name",
+       "aws_lambda_function.intake"
+      ]
+     }
+    },
+    "private_subnet_ids": {
+     "expression": {
+      "references": [
+       "aws_subnet.private"
+      ]
+     }
+    },
+    "uploads_bucket": {
+     "description": "S3 bucket where intake attachments land.",
+     "expression": {
+      "references": [
+       "aws_s3_bucket.uploads.id",
+       "aws_s3_bucket.uploads"
+      ]
+     }
+    },
+    "vpc_id": {
+     "expression": {
+      "references": [
+       "aws_vpc.main.id",
+       "aws_vpc.main"
+      ]
+     }
+    }
+   },
+   "resources": [
+    {
+     "address": "aws_apigatewayv2_api.intake",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "protocol_type": {
+       "constant_value": "HTTP"
+      }
+     },
+     "mode": "managed",
+     "name": "intake",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_apigatewayv2_api"
+    },
+    {
+     "address": "aws_apigatewayv2_integration.lambda",
+     "expressions": {
+      "api_id": {
+       "references": [
+        "aws_apigatewayv2_api.intake.id",
+        "aws_apigatewayv2_api.intake"
+       ]
+      },
+      "integration_method": {
+       "constant_value": "POST"
+      },
+      "integration_type": {
+       "constant_value": "AWS_PROXY"
+      },
+      "integration_uri": {
+       "references": [
+        "aws_lambda_function.intake.invoke_arn",
+        "aws_lambda_function.intake"
+       ]
+      },
+      "payload_format_version": {
+       "constant_value": "2.0"
+      }
+     },
+     "mode": "managed",
+     "name": "lambda",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_apigatewayv2_integration"
+    },
+    {
+     "address": "aws_apigatewayv2_route.intake",
+     "expressions": {
+      "api_id": {
+       "references": [
+        "aws_apigatewayv2_api.intake.id",
+        "aws_apigatewayv2_api.intake"
+       ]
+      },
+      "route_key": {
+       "constant_value": "POST /intake"
+      },
+      "target": {
+       "references": [
+        "aws_apigatewayv2_integration.lambda.id",
+        "aws_apigatewayv2_integration.lambda"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "intake",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_apigatewayv2_route"
+    },
+    {
+     "address": "aws_apigatewayv2_stage.default",
+     "expressions": {
+      "access_log_settings": [
+       {
+        "destination_arn": {
+         "references": [
+          "aws_cloudwatch_log_group.api_access.arn",
+          "aws_cloudwatch_log_group.api_access"
+         ]
+        },
+        "format": {}
+       }
+      ],
+      "api_id": {
+       "references": [
+        "aws_apigatewayv2_api.intake.id",
+        "aws_apigatewayv2_api.intake"
+       ]
+      },
+      "auto_deploy": {
+       "constant_value": true
+      },
+      "default_route_settings": [
+       {
+        "throttling_burst_limit": {
+         "references": [
+          "var.api_throttle_burst"
+         ]
+        },
+        "throttling_rate_limit": {
+         "references": [
+          "var.api_throttle_rate"
+         ]
+        }
+       }
+      ],
+      "name": {
+       "constant_value": "$default"
+      }
+     },
+     "mode": "managed",
+     "name": "default",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_apigatewayv2_stage"
+    },
+    {
+     "address": "aws_cloudtrail.main",
+     "depends_on": [
+      "aws_s3_bucket_policy.trail"
+     ],
+     "expressions": {
+      "enable_log_file_validation": {
+       "constant_value": true
+      },
+      "include_global_service_events": {
+       "constant_value": true
+      },
+      "is_multi_region_trail": {
+       "constant_value": true
+      },
+      "kms_key_id": {
+       "references": [
+        "aws_kms_key.evidence_key.arn",
+        "aws_kms_key.evidence_key"
+       ]
+      },
+      "name": {
+       "references": [
+        "local.trail_name"
+       ]
+      },
+      "s3_bucket_name": {
+       "references": [
+        "aws_s3_bucket.trail.id",
+        "aws_s3_bucket.trail"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "main",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_cloudtrail"
+    },
+    {
+     "address": "aws_cloudwatch_log_group.api_access",
+     "expressions": {
+      "kms_key_id": {
+       "references": [
+        "aws_kms_key.evidence_key.arn",
+        "aws_kms_key.evidence_key"
+       ]
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "retention_in_days": {
+       "constant_value": 365
+      }
+     },
+     "mode": "managed",
+     "name": "api_access",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_cloudwatch_log_group"
+    },
+    {
+     "address": "aws_dynamodb_table.intake",
+     "expressions": {
+      "attribute": [
+       {
+        "name": {
+         "constant_value": "submission_id"
+        },
+        "type": {
+         "constant_value": "S"
+        }
+       }
+      ],
+      "billing_mode": {
+       "constant_value": "PAY_PER_REQUEST"
+      },
+      "hash_key": {
+       "constant_value": "submission_id"
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "point_in_time_recovery": [
+       {
+        "enabled": {
+         "constant_value": true
+        }
+       }
+      ],
+      "server_side_encryption": [
+       {
+        "enabled": {
+         "constant_value": true
+        },
+        "kms_key_arn": {
+         "references": [
+          "aws_kms_key.data.arn",
+          "aws_kms_key.data"
+         ]
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "intake",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_dynamodb_table"
+    },
+    {
+     "address": "aws_iam_role.lambda",
+     "expressions": {
+      "assume_role_policy": {},
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "lambda",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role"
+    },
+    {
+     "address": "aws_iam_role_policy.lambda_inline",
+     "expressions": {
+      "name": {
+       "constant_value": "intake-data-access"
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.lambda_inline.json",
+        "data.aws_iam_policy_document.lambda_inline"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.lambda.id",
+        "aws_iam_role.lambda"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "lambda_inline",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role_policy"
+    },
+    {
+     "address": "aws_iam_role_policy_attachment.lambda_basic",
+     "expressions": {
+      "policy_arn": {
+       "constant_value": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.lambda.name",
+        "aws_iam_role.lambda"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "lambda_basic",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role_policy_attachment"
+    },
+    {
+     "address": "aws_iam_role_policy_attachment.lambda_vpc",
+     "expressions": {
+      "policy_arn": {
+       "constant_value": "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.lambda.name",
+        "aws_iam_role.lambda"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "lambda_vpc",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role_policy_attachment"
+    },
+    {
+     "address": "aws_iam_role_policy_attachment.lambda_xray",
+     "expressions": {
+      "policy_arn": {
+       "constant_value": "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.lambda.name",
+        "aws_iam_role.lambda"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "lambda_xray",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role_policy_attachment"
+    },
+    {
+     "address": "aws_internet_gateway.main",
+     "expressions": {
+      "tags": {
+       "references": [
+        "local.name_prefix"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "main",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_internet_gateway"
+    },
+    {
+     "address": "aws_kms_alias.data",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "target_key_id": {
+       "references": [
+        "aws_kms_key.data.key_id",
+        "aws_kms_key.data"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "data",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_kms_alias"
+    },
+    {
+     "address": "aws_kms_alias.evidence_key",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "target_key_id": {
+       "references": [
+        "aws_kms_key.evidence_key.key_id",
+        "aws_kms_key.evidence_key"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "evidence_key",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_kms_alias"
+    },
+    {
+     "address": "aws_kms_key.data",
+     "expressions": {
+      "deletion_window_in_days": {
+       "constant_value": 7
+      },
+      "description": {
+       "constant_value": "Acme Health PHI data key"
+      },
+      "enable_key_rotation": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "data",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_kms_key"
+    },
+    {
+     "address": "aws_kms_key.evidence_key",
+     "expressions": {
+      "deletion_window_in_days": {
+       "constant_value": 7
+      },
+      "description": {
+       "constant_value": "Acme Health evidence vault / audit log key"
+      },
+      "enable_key_rotation": {
+       "constant_value": true
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.evidence_key.json",
+        "data.aws_iam_policy_document.evidence_key"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "evidence_key",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_kms_key"
+    },
+    {
+     "address": "aws_lambda_function.intake",
+     "depends_on": [
+      "aws_iam_role_policy_attachment.lambda_vpc",
+      "aws_iam_role_policy.lambda_inline"
+     ],
+     "expressions": {
+      "dead_letter_config": [
+       {
+        "target_arn": {
+         "references": [
+          "aws_sqs_queue.dlq.arn",
+          "aws_sqs_queue.dlq"
+         ]
+        }
+       }
+      ],
+      "environment": [
+       {
+        "variables": {
+         "references": [
+          "aws_dynamodb_table.intake.name",
+          "aws_dynamodb_table.intake",
+          "aws_s3_bucket.uploads.id",
+          "aws_s3_bucket.uploads"
+         ]
+        }
+       }
+      ],
+      "filename": {
+       "references": [
+        "data.archive_file.handler.output_path",
+        "data.archive_file.handler"
+       ]
+      },
+      "function_name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "handler": {
+       "constant_value": "handler.handler"
+      },
+      "reserved_concurrent_executions": {
+       "references": [
+        "var.lambda_reserved_concurrency"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.lambda.arn",
+        "aws_iam_role.lambda"
+       ]
+      },
+      "runtime": {
+       "constant_value": "python3.12"
+      },
+      "source_code_hash": {
+       "references": [
+        "data.archive_file.handler.output_base64sha256",
+        "data.archive_file.handler"
+       ]
+      },
+      "timeout": {
+       "constant_value": 10
+      },
+      "tracing_config": [
+       {
+        "mode": {
+         "constant_value": "Active"
+        }
+       }
+      ],
+      "vpc_config": [
+       {
+        "security_group_ids": {
+         "references": [
+          "aws_security_group.lambda.id",
+          "aws_security_group.lambda"
+         ]
+        },
+        "subnet_ids": {
+         "references": [
+          "aws_subnet.private"
+         ]
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "intake",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_lambda_function"
+    },
+    {
+     "address": "aws_lambda_permission.apigw",
+     "expressions": {
+      "action": {
+       "constant_value": "lambda:InvokeFunction"
+      },
+      "function_name": {
+       "references": [
+        "aws_lambda_function.intake.function_name",
+        "aws_lambda_function.intake"
+       ]
+      },
+      "principal": {
+       "constant_value": "apigateway.amazonaws.com"
+      },
+      "source_arn": {
+       "references": [
+        "aws_apigatewayv2_api.intake.execution_arn",
+        "aws_apigatewayv2_api.intake"
+       ]
+      },
+      "statement_id": {
+       "constant_value": "AllowAPIGatewayInvoke"
+      }
+     },
+     "mode": "managed",
+     "name": "apigw",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_lambda_permission"
+    },
+    {
+     "address": "aws_route_table.private",
+     "expressions": {
+      "tags": {
+       "references": [
+        "local.name_prefix"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "private",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_route_table"
+    },
+    {
+     "address": "aws_route_table.public",
+     "expressions": {
+      "route": {
+       "references": [
+        "aws_internet_gateway.main.id",
+        "aws_internet_gateway.main"
+       ]
+      },
+      "tags": {
+       "references": [
+        "local.name_prefix"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "public",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_route_table"
+    },
+    {
+     "address": "aws_route_table_association.private",
+     "count_expression": {
+      "constant_value": 2
+     },
+     "expressions": {
+      "route_table_id": {
+       "references": [
+        "aws_route_table.private.id",
+        "aws_route_table.private"
+       ]
+      },
+      "subnet_id": {
+       "references": [
+        "aws_subnet.private",
+        "count.index"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "private",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_route_table_association"
+    },
+    {
+     "address": "aws_route_table_association.public",
+     "count_expression": {
+      "constant_value": 2
+     },
+     "expressions": {
+      "route_table_id": {
+       "references": [
+        "aws_route_table.public.id",
+        "aws_route_table.public"
+       ]
+      },
+      "subnet_id": {
+       "references": [
+        "aws_subnet.public",
+        "count.index"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "public",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_route_table_association"
+    },
+    {
+     "address": "aws_s3_bucket.trail",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "force_destroy": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket"
+    },
+    {
+     "address": "aws_s3_bucket.uploads",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "uploads",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket"
+    },
+    {
+     "address": "aws_s3_bucket.vault",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "object_lock_enabled": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket"
+    },
+    {
+     "address": "aws_s3_bucket_object_lock_configuration.vault",
+     "depends_on": [
+      "aws_s3_bucket_versioning.vault"
+     ],
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.vault.id",
+        "aws_s3_bucket.vault"
+       ]
+      },
+      "rule": [
+       {
+        "default_retention": [
+         {
+          "days": {
+           "references": [
+            "var.evidence_retention_days"
+           ]
+          },
+          "mode": {
+           "references": [
+            "var.evidence_lock_mode"
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_object_lock_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_policy.trail",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.trail.id",
+        "aws_s3_bucket.trail"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.trail.json",
+        "data.aws_iam_policy_document.trail"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_policy"
+    },
+    {
+     "address": "aws_s3_bucket_policy.uploads",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.uploads.id",
+        "aws_s3_bucket.uploads"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.uploads_tls.json",
+        "data.aws_iam_policy_document.uploads_tls"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "uploads",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_policy"
+    },
+    {
+     "address": "aws_s3_bucket_policy.vault",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.vault.id",
+        "aws_s3_bucket.vault"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.vault.json",
+        "data.aws_iam_policy_document.vault"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_policy"
+    },
+    {
+     "address": "aws_s3_bucket_public_access_block.trail",
+     "expressions": {
+      "block_public_acls": {
+       "constant_value": true
+      },
+      "block_public_policy": {
+       "constant_value": true
+      },
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.trail.id",
+        "aws_s3_bucket.trail"
+       ]
+      },
+      "ignore_public_acls": {
+       "constant_value": true
+      },
+      "restrict_public_buckets": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_public_access_block"
+    },
+    {
+     "address": "aws_s3_bucket_public_access_block.uploads",
+     "expressions": {
+      "block_public_acls": {
+       "constant_value": true
+      },
+      "block_public_policy": {
+       "constant_value": true
+      },
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.uploads.id",
+        "aws_s3_bucket.uploads"
+       ]
+      },
+      "ignore_public_acls": {
+       "constant_value": true
+      },
+      "restrict_public_buckets": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "uploads",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_public_access_block"
+    },
+    {
+     "address": "aws_s3_bucket_public_access_block.vault",
+     "expressions": {
+      "block_public_acls": {
+       "constant_value": true
+      },
+      "block_public_policy": {
+       "constant_value": true
+      },
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.vault.id",
+        "aws_s3_bucket.vault"
+       ]
+      },
+      "ignore_public_acls": {
+       "constant_value": true
+      },
+      "restrict_public_buckets": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_public_access_block"
+    },
+    {
+     "address": "aws_s3_bucket_server_side_encryption_configuration.trail",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.trail.id",
+        "aws_s3_bucket.trail"
+       ]
+      },
+      "rule": [
+       {
+        "apply_server_side_encryption_by_default": [
+         {
+          "kms_master_key_id": {
+           "references": [
+            "aws_kms_key.evidence_key.arn",
+            "aws_kms_key.evidence_key"
+           ]
+          },
+          "sse_algorithm": {
+           "constant_value": "aws:kms"
+          }
+         }
+        ],
+        "bucket_key_enabled": {
+         "constant_value": true
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_server_side_encryption_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_server_side_encryption_configuration.uploads",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.uploads.id",
+        "aws_s3_bucket.uploads"
+       ]
+      },
+      "rule": [
+       {
+        "apply_server_side_encryption_by_default": [
+         {
+          "kms_master_key_id": {
+           "references": [
+            "aws_kms_key.data.arn",
+            "aws_kms_key.data"
+           ]
+          },
+          "sse_algorithm": {
+           "constant_value": "aws:kms"
+          }
+         }
+        ],
+        "bucket_key_enabled": {
+         "constant_value": true
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "uploads",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_server_side_encryption_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_server_side_encryption_configuration.vault",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.vault.id",
+        "aws_s3_bucket.vault"
+       ]
+      },
+      "rule": [
+       {
+        "apply_server_side_encryption_by_default": [
+         {
+          "kms_master_key_id": {
+           "references": [
+            "aws_kms_key.evidence_key.arn",
+            "aws_kms_key.evidence_key"
+           ]
+          },
+          "sse_algorithm": {
+           "constant_value": "aws:kms"
+          }
+         }
+        ],
+        "bucket_key_enabled": {
+         "constant_value": true
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_server_side_encryption_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_versioning.trail",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.trail.id",
+        "aws_s3_bucket.trail"
+       ]
+      },
+      "versioning_configuration": [
+       {
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_versioning"
+    },
+    {
+     "address": "aws_s3_bucket_versioning.uploads",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.uploads.id",
+        "aws_s3_bucket.uploads"
+       ]
+      },
+      "versioning_configuration": [
+       {
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "uploads",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_versioning"
+    },
+    {
+     "address": "aws_s3_bucket_versioning.vault",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.vault.id",
+        "aws_s3_bucket.vault"
+       ]
+      },
+      "versioning_configuration": [
+       {
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_versioning"
+    },
+    {
+     "address": "aws_security_group.lambda",
+     "expressions": {
+      "description": {
+       "constant_value": "Intake Lambda: no ingress; egress only to S3/DynamoDB endpoints"
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "lambda",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_security_group"
+    },
+    {
+     "address": "aws_sqs_queue.dlq",
+     "expressions": {
+      "kms_master_key_id": {
+       "references": [
+        "aws_kms_key.data.arn",
+        "aws_kms_key.data"
+       ]
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "sqs_managed_sse_enabled": {
+       "constant_value": null
+      }
+     },
+     "mode": "managed",
+     "name": "dlq",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_sqs_queue"
+    },
+    {
+     "address": "aws_subnet.private",
+     "count_expression": {
+      "constant_value": 2
+     },
+     "expressions": {
+      "availability_zone": {
+       "references": [
+        "data.aws_availability_zones.available.names",
+        "data.aws_availability_zones.available",
+        "count.index"
+       ]
+      },
+      "cidr_block": {
+       "references": [
+        "count.index"
+       ]
+      },
+      "tags": {
+       "references": [
+        "local.name_prefix",
+        "count.index"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "private",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_subnet"
+    },
+    {
+     "address": "aws_subnet.public",
+     "count_expression": {
+      "constant_value": 2
+     },
+     "expressions": {
+      "availability_zone": {
+       "references": [
+        "data.aws_availability_zones.available.names",
+        "data.aws_availability_zones.available",
+        "count.index"
+       ]
+      },
+      "cidr_block": {
+       "references": [
+        "count.index"
+       ]
+      },
+      "map_public_ip_on_launch": {
+       "constant_value": true
+      },
+      "tags": {
+       "references": [
+        "local.name_prefix",
+        "count.index"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "public",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_subnet"
+    },
+    {
+     "address": "aws_vpc.main",
+     "expressions": {
+      "cidr_block": {
+       "constant_value": "10.42.0.0/16"
+      },
+      "enable_dns_hostnames": {
+       "constant_value": true
+      },
+      "enable_dns_support": {
+       "constant_value": true
+      },
+      "tags": {
+       "references": [
+        "local.name_prefix"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "main",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_vpc"
+    },
+    {
+     "address": "aws_vpc_endpoint.dynamodb",
+     "expressions": {
+      "route_table_ids": {
+       "references": [
+        "aws_route_table.private.id",
+        "aws_route_table.private"
+       ]
+      },
+      "service_name": {
+       "references": [
+        "var.aws_region"
+       ]
+      },
+      "vpc_endpoint_type": {
+       "constant_value": "Gateway"
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "dynamodb",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_vpc_endpoint"
+    },
+    {
+     "address": "aws_vpc_endpoint.s3",
+     "expressions": {
+      "route_table_ids": {
+       "references": [
+        "aws_route_table.private.id",
+        "aws_route_table.private"
+       ]
+      },
+      "service_name": {
+       "references": [
+        "var.aws_region"
+       ]
+      },
+      "vpc_endpoint_type": {
+       "constant_value": "Gateway"
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "s3",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_vpc_endpoint"
+    },
+    {
+     "address": "aws_vpc_security_group_egress_rule.lambda_dynamodb",
+     "expressions": {
+      "description": {
+       "constant_value": "DynamoDB gateway endpoint"
+      },
+      "ip_protocol": {
+       "constant_value": "-1"
+      },
+      "prefix_list_id": {
+       "references": [
+        "aws_vpc_endpoint.dynamodb.prefix_list_id",
+        "aws_vpc_endpoint.dynamodb"
+       ]
+      },
+      "security_group_id": {
+       "references": [
+        "aws_security_group.lambda.id",
+        "aws_security_group.lambda"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "lambda_dynamodb",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_vpc_security_group_egress_rule"
+    },
+    {
+     "address": "aws_vpc_security_group_egress_rule.lambda_s3",
+     "expressions": {
+      "description": {
+       "constant_value": "S3 gateway endpoint"
+      },
+      "ip_protocol": {
+       "constant_value": "-1"
+      },
+      "prefix_list_id": {
+       "references": [
+        "aws_vpc_endpoint.s3.prefix_list_id",
+        "aws_vpc_endpoint.s3"
+       ]
+      },
+      "security_group_id": {
+       "references": [
+        "aws_security_group.lambda.id",
+        "aws_security_group.lambda"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "lambda_s3",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_vpc_security_group_egress_rule"
+    },
+    {
+     "address": "random_id.suffix",
+     "expressions": {
+      "byte_length": {
+       "constant_value": 4
+      }
+     },
+     "mode": "managed",
+     "name": "suffix",
+     "provider_config_key": "random",
+     "schema_version": 0,
+     "type": "random_id"
+    },
+    {
+     "address": "data.archive_file.handler",
+     "expressions": {
+      "output_path": {
+       "references": [
+        "path.module"
+       ]
+      },
+      "source_file": {
+       "references": [
+        "path.module"
+       ]
+      },
+      "type": {
+       "constant_value": "zip"
+      }
+     },
+     "mode": "data",
+     "name": "handler",
+     "provider_config_key": "archive",
+     "schema_version": 0,
+     "type": "archive_file"
+    },
+    {
+     "address": "data.aws_availability_zones.available",
+     "expressions": {
+      "state": {
+       "constant_value": "available"
+      }
+     },
+     "mode": "data",
+     "name": "available",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_availability_zones"
+    },
+    {
+     "address": "data.aws_caller_identity.current",
+     "mode": "data",
+     "name": "current",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_caller_identity"
+    },
+    {
+     "address": "data.aws_iam_policy_document.evidence_key",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "kms:*"
+         ]
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "references": [
+            "data.aws_caller_identity.current.account_id",
+            "data.aws_caller_identity.current"
+           ]
+          },
+          "type": {
+           "constant_value": "AWS"
+          }
+         }
+        ],
+        "resources": {
+         "constant_value": [
+          "*"
+         ]
+        },
+        "sid": {
+         "constant_value": "AccountAdmin"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "StringEquals"
+          },
+          "values": {
+           "references": [
+            "var.aws_region",
+            "data.aws_caller_identity.current.account_id",
+            "data.aws_caller_identity.current",
+            "local.name_prefix"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceArn"
+          }
+         }
+        ],
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "cloudtrail.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "constant_value": [
+          "*"
+         ]
+        },
+        "sid": {
+         "constant_value": "CloudTrailEncrypt"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "kms:Encrypt*",
+          "kms:Decrypt*",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "ArnLike"
+          },
+          "values": {
+           "references": [
+            "var.aws_region",
+            "data.aws_caller_identity.current.account_id",
+            "data.aws_caller_identity.current"
+           ]
+          },
+          "variable": {
+           "constant_value": "kms:EncryptionContext:aws:logs:arn"
+          }
+         }
+        ],
+        "principals": [
+         {
+          "identifiers": {
+           "references": [
+            "var.aws_region"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "constant_value": [
+          "*"
+         ]
+        },
+        "sid": {
+         "constant_value": "CloudWatchLogsEncrypt"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "evidence_key",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.lambda_inline",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "dynamodb:PutItem"
+         ]
+        },
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "resources": {
+         "references": [
+          "aws_dynamodb_table.intake.arn",
+          "aws_dynamodb_table.intake"
+         ]
+        },
+        "sid": {
+         "constant_value": "IntakeTableWrite"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "s3:PutObject"
+         ]
+        },
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "resources": {
+         "references": [
+          "aws_s3_bucket.uploads.arn",
+          "aws_s3_bucket.uploads"
+         ]
+        },
+        "sid": {
+         "constant_value": "UploadsWrite"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "kms:GenerateDataKey",
+          "kms:Decrypt"
+         ]
+        },
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "resources": {
+         "references": [
+          "aws_kms_key.data.arn",
+          "aws_kms_key.data"
+         ]
+        },
+        "sid": {
+         "constant_value": "DataKeyUse"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "sqs:SendMessage"
+         ]
+        },
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "resources": {
+         "references": [
+          "aws_sqs_queue.dlq.arn",
+          "aws_sqs_queue.dlq"
+         ]
+        },
+        "sid": {
+         "constant_value": "DlqSend"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "lambda_inline",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.trail",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "s3:GetBucketAcl"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "StringEquals"
+          },
+          "values": {
+           "references": [
+            "var.aws_region",
+            "data.aws_caller_identity.current.account_id",
+            "data.aws_caller_identity.current",
+            "local.trail_name"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceArn"
+          }
+         }
+        ],
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "cloudtrail.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.trail.arn",
+          "aws_s3_bucket.trail"
+         ]
+        },
+        "sid": {
+         "constant_value": "AWSCloudTrailAclCheck"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "s3:PutObject"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "StringEquals"
+          },
+          "values": {
+           "constant_value": [
+            "bucket-owner-full-control"
+           ]
+          },
+          "variable": {
+           "constant_value": "s3:x-amz-acl"
+          }
+         },
+         {
+          "test": {
+           "constant_value": "StringEquals"
+          },
+          "values": {
+           "references": [
+            "var.aws_region",
+            "data.aws_caller_identity.current.account_id",
+            "data.aws_caller_identity.current",
+            "local.trail_name"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceArn"
+          }
+         }
+        ],
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "cloudtrail.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.trail.arn",
+          "aws_s3_bucket.trail",
+          "data.aws_caller_identity.current.account_id",
+          "data.aws_caller_identity.current"
+         ]
+        },
+        "sid": {
+         "constant_value": "AWSCloudTrailWrite"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "s3:*"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "Bool"
+          },
+          "values": {
+           "constant_value": [
+            "false"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SecureTransport"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.trail.arn",
+          "aws_s3_bucket.trail",
+          "aws_s3_bucket.trail.arn",
+          "aws_s3_bucket.trail"
+         ]
+        },
+        "sid": {
+         "constant_value": "DenyInsecureTransport"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.uploads_tls",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "s3:*"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "Bool"
+          },
+          "values": {
+           "constant_value": [
+            "false"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SecureTransport"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.uploads.arn",
+          "aws_s3_bucket.uploads",
+          "aws_s3_bucket.uploads.arn",
+          "aws_s3_bucket.uploads"
+         ]
+        },
+        "sid": {
+         "constant_value": "DenyInsecureTransport"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "uploads_tls",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.vault",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "s3:*"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "Bool"
+          },
+          "values": {
+           "constant_value": [
+            "false"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SecureTransport"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.vault.arn",
+          "aws_s3_bucket.vault",
+          "aws_s3_bucket.vault.arn",
+          "aws_s3_bucket.vault"
+         ]
+        },
+        "sid": {
+         "constant_value": "DenyInsecureTransport"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "s3:DeleteBucket"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "StringNotEquals"
+          },
+          "values": {
+           "references": [
+            "data.aws_caller_identity.current.account_id",
+            "data.aws_caller_identity.current"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:PrincipalArn"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.vault.arn",
+          "aws_s3_bucket.vault"
+         ]
+        },
+        "sid": {
+         "constant_value": "DenyBucketDeletion"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_region.current",
+     "mode": "data",
+     "name": "current",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_region"
+    }
+   ],
+   "variables": {
+    "api_throttle_burst": {
+     "default": 20
+    },
+    "api_throttle_rate": {
+     "default": 10
+    },
+    "aws_region": {
+     "default": "us-east-1",
+     "description": "AWS region for the starter."
+    },
+    "evidence_lock_mode": {
+     "default": "GOVERNANCE",
+     "description": "Object Lock mode for the evidence vault. GOVERNANCE for the sandbox; COMPLIANCE is irreversible until retention expires."
+    },
+    "evidence_retention_days": {
+     "default": 1
+    },
+    "lambda_reserved_concurrency": {
+     "default": -1,
+     "description": "Reserved concurrency for the intake Lambda. -1 = unreserved. Accounts with the default limit of 10 cannot reserve any (AWS requires 10 unreserved); raise the quota, then set this."
+    }
+   }
+  }
+ }
+}

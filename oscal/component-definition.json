@@ -1,0 +1,456 @@
+{
+  "component-definition": {
+    "uuid": "ab69b2f2-a2df-5fb8-a66c-cc4b8b1916f0",
+    "metadata": {
+      "title": "Acme Health patient intake API - SOC 2 component definition",
+      "last-modified": "2026-09-20T01:47:25+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "parties": [
+        {
+          "uuid": "fe7cdb5b-7fd5-5b3e-9be2-e6a184a12863",
+          "type": "person",
+          "name": "Jonathan Steward"
+        }
+      ]
+    },
+    "components": [
+      {
+        "uuid": "a93ba523-a599-5bef-bc51-a20d33bc5783",
+        "type": "software",
+        "title": "acme-health-intake",
+        "description": "AWS patient intake workload (API Gateway HTTP API, Lambda, DynamoDB, S3) wrapped with a KMS/vault/CloudTrail baseline, an OPA policy gate and a signed-evidence pipeline.",
+        "purpose": "Collect patient intake submissions (PHI) under SOC 2 Security and Availability criteria.",
+        "responsible-roles": [
+          {
+            "role-id": "provider",
+            "party-uuids": [
+              "fe7cdb5b-7fd5-5b3e-9be2-e6a184a12863"
+            ]
+          }
+        ],
+        "control-implementations": [
+          {
+            "uuid": "01161c85-b73e-5e96-a83d-431a65930dc3",
+            "source": "https://github.com/jonathansteward/cgep-capstone/blob/main/oscal/catalogs/soc2-tsc-catalog.json",
+            "description": "SOC 2 Trust Services Criteria satisfied by the Terraform in terraform/ and enforced by policies/soc2/.",
+            "props": [
+              {
+                "name": "framework",
+                "value": "soc2"
+              },
+              {
+                "name": "profile",
+                "value": "oscal/profiles/acme-soc2-profile.json"
+              }
+            ],
+            "implemented-requirements": [
+              {
+                "uuid": "7f81672c-e82e-516d-ba8f-ab5d24c9adeb",
+                "control-id": "cc6.1",
+                "description": "PHI at rest is encrypted with customer-managed, annually rotated KMS keys: the uploads bucket (SSE-KMS), the DynamoDB submissions table, the evidence vault, the CloudTrail bucket, the DLQ and API access logs.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_kms_key.data"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_kms_key.evidence_key"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_server_side_encryption_configuration.uploads"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_dynamodb_table.intake"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_server_side_encryption_configuration.vault"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_server_side_encryption_configuration.trail"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_sqs_queue.dlq"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudwatch_log_group.api_access"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "cc6_1_s3_cmk"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "cc6_1_dynamodb_cmk"
+                  },
+                  {
+                    "name": "closes-gap",
+                    "value": "GAP-01"
+                  },
+                  {
+                    "name": "closes-gap",
+                    "value": "GAP-02"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
+                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                  },
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
+                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/cc6_1_s3_cmk.rego",
+                    "text": "Rego policy cc6_1_s3_cmk"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/cc6_1_dynamodb_cmk.rego",
+                    "text": "Rego policy cc6_1_dynamodb_cmk"
+                  }
+                ]
+              },
+              {
+                "uuid": "32036a57-c70d-5ec8-8a60-c64b8415b5ef",
+                "control-id": "cc6.3",
+                "description": "The intake Lambda role is limited to dynamodb:PutItem on the table, s3:PutObject on the uploads bucket, data-key use and SQS send; wildcard actions are blocked by policy. Pipeline roles are split: a metadata-only plan role for pull requests and an apply role for main that is denied PHI data-plane access and vault tampering.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "partial"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "data.aws_iam_policy_document.lambda_inline"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_iam_role_policy.lambda_inline"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_iam_role.lambda"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "cc6_3_iam_least_privilege"
+                  },
+                  {
+                    "name": "closes-gap",
+                    "value": "GAP-07"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
+                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                  },
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
+                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/cc6_3_iam_least_privilege.rego",
+                    "text": "Rego policy cc6_3_iam_least_privilege"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../bootstrap/main.tf",
+                    "text": "Pipeline roles cgep-capstone-gh-plan / gh-apply (bootstrap, not gated by this pipeline)."
+                  }
+                ],
+                "remarks": "Technical least privilege is implemented and gated. The periodic (at least annual) human access review that CC6.3 also expects is an organizational process that Terraform cannot enforce; it is owned by the Acme security lead and is not evidenced in this repository."
+              },
+              {
+                "uuid": "06960933-8e89-5a76-8677-2f92bbbec9cd",
+                "control-id": "cc6.6",
+                "description": "The Lambda runs in the VPC private subnets with a security group that allows egress only to the S3 and DynamoDB gateway endpoints; private subnets have no internet route.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_lambda_function.intake"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_security_group.lambda"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_vpc_endpoint.s3"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_vpc_endpoint.dynamodb"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_route_table.private"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_vpc_security_group_egress_rule.lambda_s3"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_vpc_security_group_egress_rule.lambda_dynamodb"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "cc6_6_lambda_vpc"
+                  },
+                  {
+                    "name": "closes-gap",
+                    "value": "GAP-05"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
+                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                  },
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
+                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/cc6_6_lambda_vpc.rego",
+                    "text": "Rego policy cc6_6_lambda_vpc"
+                  }
+                ],
+                "remarks": "The API Gateway HTTP API remains the public entry point by design; WAFv2 cannot be associated with HTTP APIs."
+              },
+              {
+                "uuid": "ec5fefbf-8cfe-54db-b590-13e5f4bb4bff",
+                "control-id": "cc6.7",
+                "description": "Every S3 bucket carries a bucket policy denying requests where aws:SecureTransport is false; the API endpoint is HTTPS-only.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_policy.uploads"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "data.aws_iam_policy_document.uploads_tls"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_policy.vault"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_policy.trail"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_apigatewayv2_api.intake"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "cc6_7_s3_tls"
+                  },
+                  {
+                    "name": "closes-gap",
+                    "value": "GAP-03"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
+                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                  },
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
+                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/cc6_7_s3_tls.rego",
+                    "text": "Rego policy cc6_7_s3_tls"
+                  }
+                ]
+              },
+              {
+                "uuid": "0ce5627d-77d7-59f1-8403-37a965d9658a",
+                "control-id": "cc7.2",
+                "description": "Activity is recorded and anomalies are surfaced: a multi-region KMS-encrypted CloudTrail with log-file validation, API Gateway access logs (365-day retention) with throttling, Lambda X-Ray tracing and a dead-letter queue, and signed evidence written to an Object Lock vault on every pipeline run.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "partial"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudtrail.main"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_apigatewayv2_stage.default"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudwatch_log_group.api_access"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_lambda_function.intake"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_sqs_queue.dlq"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_object_lock_configuration.vault"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "cc7_2_cloudtrail"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "cc7_2_api_logging"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "cc7_2_lambda_observability"
+                  },
+                  {
+                    "name": "closes-gap",
+                    "value": "GAP-06"
+                  },
+                  {
+                    "name": "closes-gap",
+                    "value": "GAP-08"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
+                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                  },
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
+                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                  },
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481966227/plan/evidence-plan-35481966227-f005c85ddc7fb9fab76e8295749c81e157e01214.tar.gz?versionId=gCM__G4ea7ikqsKazzWR35YDfX_iQdxo",
+                    "text": "Run 35481966227 (PR blocked by gate): signed plan + policy-gate results; sha256 f9328e1562fa817502358dd1df15d4991e98382908ffce3a8adb814f87fa2ec4; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481966227 plan"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/cc7_2_cloudtrail.rego",
+                    "text": "Rego policy cc7_2_cloudtrail"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/cc7_2_api_logging.rego",
+                    "text": "Rego policy cc7_2_api_logging"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/cc7_2_lambda_observability.rego",
+                    "text": "Rego policy cc7_2_lambda_observability"
+                  }
+                ],
+                "remarks": "Not closed: (1) Lambda reserved concurrency, because the account concurrency quota is 10 and AWS requires 10 unreserved; it is exposed as var.lambda_reserved_concurrency. (2) WAF, which is not supported on HTTP APIs. (3) No alarms or alert routing are defined; detection rules and on-call response are an organizational process. The blocked PR run shows the gate refusing a regression."
+              },
+              {
+                "uuid": "bab710a7-4372-50d9-9107-dddf52b89e42",
+                "control-id": "a1.2",
+                "description": "S3 versioning is enabled on the uploads bucket, DynamoDB point-in-time recovery is on, and the evidence vault is versioned with Object Lock.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_versioning.uploads"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_dynamodb_table.intake"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_versioning.vault"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_object_lock_configuration.vault"
+                  },
+                  {
+                    "name": "rego-policy",
+                    "value": "a1_2_s3_versioning"
+                  },
+                  {
+                    "name": "closes-gap",
+                    "value": "GAP-04"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
+                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                  },
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
+                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                  },
+                  {
+                    "rel": "evidence",
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481966227/plan/evidence-plan-35481966227-f005c85ddc7fb9fab76e8295749c81e157e01214.tar.gz?versionId=gCM__G4ea7ikqsKazzWR35YDfX_iQdxo",
+                    "text": "Run 35481966227 (PR blocked by gate): signed plan + policy-gate results; sha256 f9328e1562fa817502358dd1df15d4991e98382908ffce3a8adb814f87fa2ec4; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481966227 plan"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../policies/soc2/a1_2_s3_versioning.rego",
+                    "text": "Rego policy a1_2_s3_versioning"
+                  }
+                ],
+                "remarks": "The blocked PR (run 35481966227) removed uploads versioning and was rejected by the A1.2 policy."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

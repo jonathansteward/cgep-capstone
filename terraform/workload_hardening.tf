@@ -15,13 +15,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "uploads" {
   }
 }
 
-# ---- GAP-04: versioning (A1.2) ----
-resource "aws_s3_bucket_versioning" "uploads" {
-  bucket = aws_s3_bucket.uploads.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
+# (versioning removed to demonstrate the policy gate)
 
 resource "aws_s3_bucket_public_access_block" "uploads" {
   bucket                  = aws_s3_bucket.uploads.id

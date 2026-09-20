@@ -53,7 +53,7 @@ rec = {}
 for f in sorted(glob.glob("oscal/evidence/receipt-*.json")):
     r = json.load(open(f))
     rec[(r["run_id"], r["stage"])] = r
-MAIN_RUN, BLOCKED_RUN = "35481905389", "35481966227"
+MAIN_RUN, BLOCKED_RUN = "35482366069", "35481966227"
 
 
 def evidence_links(*keys):

@@ -3,7 +3,7 @@
     "uuid": "ab69b2f2-a2df-5fb8-a66c-cc4b8b1916f0",
     "metadata": {
       "title": "Acme Health patient intake API - SOC 2 component definition",
-      "last-modified": "2026-09-20T01:47:25+00:00",
+      "last-modified": "2026-09-20T01:51:25+00:00",
       "version": "1.0.0",
       "oscal-version": "1.1.2",
       "parties": [
@@ -106,13 +106,13 @@
                 "links": [
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
-                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/plan/evidence-plan-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=Z7XiatkmBxPZ.epI7c3imO8pt5z1Kv.S",
+                    "text": "Run 35482366069 (merged to main): signed plan + policy-gate results; sha256 181d8a2c93e1635dba877f3001fcf35fd0b2b3ac224a9457eafa02fc8e95ad85; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 plan"
                   },
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
-                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/apply/evidence-apply-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=ArSVsRUPp0EVBCbZzmCi5BBhGhOReVvc",
+                    "text": "Run 35482366069 (merged to main): signed post-apply state summary; sha256 356486dc28be4c22d57f6dae4d95e829a66a133a9d33148c529e489904724367; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 apply"
                   },
                   {
                     "rel": "reference",
@@ -159,13 +159,13 @@
                 "links": [
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
-                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/plan/evidence-plan-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=Z7XiatkmBxPZ.epI7c3imO8pt5z1Kv.S",
+                    "text": "Run 35482366069 (merged to main): signed plan + policy-gate results; sha256 181d8a2c93e1635dba877f3001fcf35fd0b2b3ac224a9457eafa02fc8e95ad85; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 plan"
                   },
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
-                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/apply/evidence-apply-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=ArSVsRUPp0EVBCbZzmCi5BBhGhOReVvc",
+                    "text": "Run 35482366069 (merged to main): signed post-apply state summary; sha256 356486dc28be4c22d57f6dae4d95e829a66a133a9d33148c529e489904724367; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 apply"
                   },
                   {
                     "rel": "reference",
@@ -229,13 +229,13 @@
                 "links": [
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
-                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/plan/evidence-plan-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=Z7XiatkmBxPZ.epI7c3imO8pt5z1Kv.S",
+                    "text": "Run 35482366069 (merged to main): signed plan + policy-gate results; sha256 181d8a2c93e1635dba877f3001fcf35fd0b2b3ac224a9457eafa02fc8e95ad85; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 plan"
                   },
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
-                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/apply/evidence-apply-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=ArSVsRUPp0EVBCbZzmCi5BBhGhOReVvc",
+                    "text": "Run 35482366069 (merged to main): signed post-apply state summary; sha256 356486dc28be4c22d57f6dae4d95e829a66a133a9d33148c529e489904724367; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 apply"
                   },
                   {
                     "rel": "reference",
@@ -286,13 +286,13 @@
                 "links": [
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
-                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/plan/evidence-plan-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=Z7XiatkmBxPZ.epI7c3imO8pt5z1Kv.S",
+                    "text": "Run 35482366069 (merged to main): signed plan + policy-gate results; sha256 181d8a2c93e1635dba877f3001fcf35fd0b2b3ac224a9457eafa02fc8e95ad85; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 plan"
                   },
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
-                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/apply/evidence-apply-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=ArSVsRUPp0EVBCbZzmCi5BBhGhOReVvc",
+                    "text": "Run 35482366069 (merged to main): signed post-apply state summary; sha256 356486dc28be4c22d57f6dae4d95e829a66a133a9d33148c529e489904724367; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 apply"
                   },
                   {
                     "rel": "reference",
@@ -358,13 +358,13 @@
                 "links": [
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
-                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/plan/evidence-plan-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=Z7XiatkmBxPZ.epI7c3imO8pt5z1Kv.S",
+                    "text": "Run 35482366069 (merged to main): signed plan + policy-gate results; sha256 181d8a2c93e1635dba877f3001fcf35fd0b2b3ac224a9457eafa02fc8e95ad85; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 plan"
                   },
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
-                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/apply/evidence-apply-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=ArSVsRUPp0EVBCbZzmCi5BBhGhOReVvc",
+                    "text": "Run 35482366069 (merged to main): signed post-apply state summary; sha256 356486dc28be4c22d57f6dae4d95e829a66a133a9d33148c529e489904724367; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 apply"
                   },
                   {
                     "rel": "evidence",
@@ -426,13 +426,13 @@
                 "links": [
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/plan/evidence-plan-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=d1CYyoGLquVTbRin0OvAmoAol_xr_VNa",
-                    "text": "Run 35481905389 (merged to main): signed plan + policy-gate results; sha256 7e3f823d18be5f6b7b17c6977e2d9a3655c8e8083ad2139f4565c59051d7efc9; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 plan"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/plan/evidence-plan-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=Z7XiatkmBxPZ.epI7c3imO8pt5z1Kv.S",
+                    "text": "Run 35482366069 (merged to main): signed plan + policy-gate results; sha256 181d8a2c93e1635dba877f3001fcf35fd0b2b3ac224a9457eafa02fc8e95ad85; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 plan"
                   },
                   {
                     "rel": "evidence",
-                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35481905389/apply/evidence-apply-35481905389-1348829f690003e6d64ff86e9c7329a6c1624dfc.tar.gz?versionId=5.Ldh4LzXorgPi6vzMDhO6GJRbjyUBwO",
-                    "text": "Run 35481905389 (merged to main): signed post-apply state summary; sha256 af4350d4c2c3d8f2bb03d17535c044cde7dc8c157cd0eccd52418541c1db10ec; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35481905389 apply"
+                    "href": "s3://acme-health-intake-evidence-vault-96580d57/evidence/runs/35482366069/apply/evidence-apply-35482366069-63b5ffe856232973eeeb465bc4202b0fd427c47c.tar.gz?versionId=ArSVsRUPp0EVBCbZzmCi5BBhGhOReVvc",
+                    "text": "Run 35482366069 (merged to main): signed post-apply state summary; sha256 356486dc28be4c22d57f6dae4d95e829a66a133a9d33148c529e489904724367; Cosign keyless bundle alongside as .sig.bundle. Check: scripts/verify-evidence.sh 35482366069 apply"
                   },
                   {
                     "rel": "evidence",

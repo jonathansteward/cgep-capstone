@@ -30,7 +30,7 @@ catalog = {"catalog": {
     "uuid": u("catalog"),
     "metadata": {
         "title": "SOC 2 Trust Services Criteria (2017, rev. 2022) - criteria claimed by Acme Health intake",
-        "last-modified": NOW, "version": "1.0.0", "oscal-version": "1.1.2",
+        "last-modified": NOW, "version": "1.0.0", "oscal-version": "1.2.1",
         "remarks": "AICPA publishes no official OSCAL catalog. This is a subset limited to the criteria "
                    "referenced by this capstone; titles are paraphrased, not the AICPA text.",
     },
@@ -42,7 +42,7 @@ catalog = {"catalog": {
 profile = {"profile": {
     "uuid": u("profile"),
     "metadata": {"title": "Acme Health intake - SOC 2 profile", "last-modified": NOW,
-                 "version": "1.0.0", "oscal-version": "1.1.2"},
+                 "version": "1.0.0", "oscal-version": "1.2.1"},
     "imports": [{"href": "../catalogs/soc2-tsc-catalog.json",
                  "include-controls": [{"with-ids": list(CONTROLS)}]}],
     "merge": {"as-is": True},
@@ -152,7 +152,7 @@ party = u("party")
 component = {"component-definition": {
     "uuid": u("component-definition"),
     "metadata": {"title": "Acme Health patient intake API - SOC 2 component definition", "last-modified": NOW,
-                 "version": "1.0.0", "oscal-version": "1.1.2",
+                 "version": "1.0.0", "oscal-version": "1.2.1",
                  "parties": [{"uuid": party, "type": "person", "name": "Jonathan Steward"}]},
     "components": [{
         "uuid": u("component"), "type": "software", "title": "acme-health-intake",
@@ -173,6 +173,6 @@ component = {"component-definition": {
 
 for path, doc in [("oscal/catalogs/soc2-tsc-catalog.json", catalog),
                   ("oscal/profiles/acme-soc2-profile.json", profile),
-                  ("oscal/component-definition.json", component)]:
+                  ("oscal/components/acme-health-intake.json", component)]:
     json.dump(doc, open(path, "w"), indent=2)
     print("wrote", path)

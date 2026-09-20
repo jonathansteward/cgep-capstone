@@ -40,9 +40,16 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
+# GitHub now issues OIDC subjects with immutable owner/repo IDs
+# (`gh api repos/<org>/<repo>/actions/oidc/customization/sub`), which survive
+# repo renames and transfers and so cannot be hijacked by re-registering the name.
+variable "github_sub_prefix" {
+  type    = string
+  default = "repo:jonathansteward@7085960/cgep-capstone@1377749695"
+}
+
 locals {
   account_id = data.aws_caller_identity.current.account_id
-  repo       = "${var.github_org}/${var.github_repo}"
 }
 
 # ---------------- remote state ----------------
@@ -118,7 +125,7 @@ data "aws_iam_policy_document" "trust_pr" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${local.repo}:pull_request"]
+      values   = ["${var.github_sub_prefix}:pull_request"]
     }
   }
 }
@@ -138,7 +145,7 @@ data "aws_iam_policy_document" "trust_main" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${local.repo}:ref:refs/heads/main"]
+      values   = ["${var.github_sub_prefix}:ref:refs/heads/main"]
     }
   }
 }

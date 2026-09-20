@@ -39,7 +39,7 @@ if want - gaps: errs.append(f"gaps not traced: {sorted(want - gaps)}")
 used = {p["value"] for r in ci["implemented-requirements"] for p in r["props"] if p["name"] == "rego-policy"}
 for f in os.listdir("policies/soc2"):
     n = f[:-5]
-    if f.endswith(".rego") and n != "lib" and n not in used: errs.append(f"policy {n} not referenced in OSCAL")
+    if f.endswith(".rego") and n not in ("lib", "soc2_test") and n not in used: errs.append(f"policy {n} not referenced in OSCAL")
 print("OSCAL check:", "FAIL" if errs else "ok")
 for e in errs: print(" -", e)
 sys.exit(1 if errs else 0)

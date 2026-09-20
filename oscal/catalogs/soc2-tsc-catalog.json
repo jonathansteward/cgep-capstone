@@ -1,0 +1,80 @@
+{
+  "catalog": {
+    "uuid": "4daac17d-a0f7-535f-be9d-10c3697512a5",
+    "metadata": {
+      "title": "SOC 2 Trust Services Criteria (2017, rev. 2022) - criteria claimed by Acme Health intake",
+      "last-modified": "2026-09-20T01:47:25+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "remarks": "AICPA publishes no official OSCAL catalog. This is a subset limited to the criteria referenced by this capstone; titles are paraphrased, not the AICPA text."
+    },
+    "groups": [
+      {
+        "id": "soc2",
+        "title": "Trust Services Criteria",
+        "controls": [
+          {
+            "id": "cc6.1",
+            "title": "Logical access security and encryption of protected information assets",
+            "props": [
+              {
+                "name": "label",
+                "value": "CC6.1"
+              }
+            ]
+          },
+          {
+            "id": "cc6.3",
+            "title": "Access authorization based on least privilege",
+            "props": [
+              {
+                "name": "label",
+                "value": "CC6.3"
+              }
+            ]
+          },
+          {
+            "id": "cc6.6",
+            "title": "Boundary protection against threats from outside system boundaries",
+            "props": [
+              {
+                "name": "label",
+                "value": "CC6.6"
+              }
+            ]
+          },
+          {
+            "id": "cc6.7",
+            "title": "Protection of information in transmission",
+            "props": [
+              {
+                "name": "label",
+                "value": "CC6.7"
+              }
+            ]
+          },
+          {
+            "id": "cc7.2",
+            "title": "Monitoring of system components for anomalies and security events",
+            "props": [
+              {
+                "name": "label",
+                "value": "CC7.2"
+              }
+            ]
+          },
+          {
+            "id": "a1.2",
+            "title": "Environmental protections, backup and recovery infrastructure",
+            "props": [
+              {
+                "name": "label",
+                "value": "A1.2"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

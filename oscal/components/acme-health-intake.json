@@ -3,7 +3,7 @@
     "uuid": "ab69b2f2-a2df-5fb8-a66c-cc4b8b1916f0",
     "metadata": {
       "title": "Acme Health patient intake API - SOC 2 component definition",
-      "last-modified": "2026-09-20T02:00:54+00:00",
+      "last-modified": "2026-09-22T02:43:53+00:00",
       "version": "1.0.0",
       "oscal-version": "1.2.1",
       "parties": [
@@ -304,7 +304,7 @@
               {
                 "uuid": "0ce5627d-77d7-59f1-8403-37a965d9658a",
                 "control-id": "cc7.2",
-                "description": "Activity is recorded and anomalies are surfaced: a multi-region KMS-encrypted CloudTrail with log-file validation, API Gateway access logs (365-day retention) with throttling, Lambda X-Ray tracing and a dead-letter queue, and signed evidence written to an Object Lock vault on every pipeline run.",
+                "description": "Activity is recorded, and drift or misconfiguration is detected continuously, not just at CI plan time: a multi-region KMS-encrypted CloudTrail with log-file validation, API Gateway access logs (365-day retention) with throttling, Lambda X-Ray tracing and a dead-letter queue, signed evidence written to an Object Lock vault on every pipeline run, and seven AWS Config managed rules (one per gap-closing control) that re-evaluate deployed resources continuously and publish to an SNS topic on NON_COMPLIANT via EventBridge.",
                 "props": [
                   {
                     "name": "implementation-status",
@@ -333,6 +333,46 @@
                   {
                     "name": "terraform-resource",
                     "value": "aws_s3_bucket_object_lock_configuration.vault"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_config_config_rule.s3_sse"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_config_config_rule.s3_tls_only"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_config_config_rule.s3_versioning"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_config_config_rule.dynamodb_cmk"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_config_config_rule.lambda_in_vpc"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_config_config_rule.iam_no_admin"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_config_config_rule.cloudtrail_enabled"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_config_config_rule.api_gw_logging"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_sns_topic.compliance_alerts"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudwatch_event_rule.config_noncompliant"
                   },
                   {
                     "name": "rego-policy",
@@ -385,9 +425,14 @@
                     "rel": "reference",
                     "href": "../../policies/soc2/cc7_2_lambda_observability.rego",
                     "text": "Rego policy cc7_2_lambda_observability"
+                  },
+                  {
+                    "rel": "reference",
+                    "href": "../../terraform/monitoring.tf",
+                    "text": "AWS Config rules + EventBridge->SNS alert routing"
                   }
                 ],
-                "remarks": "Not closed: (1) Lambda reserved concurrency, because the account concurrency quota is 10 and AWS requires 10 unreserved; it is exposed as var.lambda_reserved_concurrency. (2) WAF, which is not supported on HTTP APIs. (3) No alarms or alert routing are defined; detection rules and on-call response are an organizational process. The blocked PR run shows the gate refusing a regression."
+                "remarks": "Not closed: (1) Lambda reserved concurrency, because the account concurrency quota is 10 and AWS requires 10 unreserved; it is exposed as var.lambda_reserved_concurrency. (2) WAF, which is not supported on HTTP APIs. (3) The Config rules were confirmed to evaluate correctly against the deployed (compliant) resources after apply, but drift was not simulated live on running infrastructure the way scripts/gap-regression.py simulates it against a plan \u2014 that is a known gap in test depth, distinct from the Rego suite's tested regression. (4) The SNS topic has no subscriber configured; wiring an on-call subscription is an organizational step. The blocked PR run shows the CI-time gate refusing a regression; the Config rules are the runtime counterpart."
               },
               {
                 "uuid": "bab710a7-4372-50d9-9107-dddf52b89e42",

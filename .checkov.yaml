@@ -1,0 +1,22 @@
+# Checkov config (Tier 0 static analysis for this capstone).
+# Run: checkov -d terraform --config-file .checkov.yaml
+# CI: .github/workflows/grc-gate.yml, "checkov (Tier 0 IaC scan)" step.
+#
+# Inline `#checkov:skip=` comments don't suppress these four checks in this
+# checkov version (3.3.10) — they're graph-based checks that don't attach to
+# a single HCL line — so the skips are declared here instead, each with the
+# same rationale that would otherwise be an inline comment.
+skip-check:
+  # kms.tf: data.aws_iam_policy_document.evidence_key — a KMS key policy's
+  # Resource is always "*" (the policy is scoped to the key it's attached
+  # to; there is no narrower ARN to restrict to). The AccountAdmin
+  # statement is the standard AWS root-account grant every CMK needs so IAM
+  # can govern it. Least privilege here comes from Principal, not Resource.
+  - CKV_AWS_111
+  - CKV_AWS_356
+  - CKV_AWS_109
+  # main.tf: aws_apigatewayv2_route.intake — the intake API is
+  # intentionally unauthenticated. WORKLOAD.md declares API-layer auth
+  # "out of scope for this capstone (a capstone extension, not a
+  # requirement)".
+  - CKV_AWS_309

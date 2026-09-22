@@ -8,6 +8,8 @@ locals {
   trail_name = "${local.name_prefix}-trail"
 }
 
+# CKV_AWS_144 (cross-region replication) is skipped in .checkov.yaml —
+# see the same note on aws_s3_bucket.uploads in main.tf.
 resource "aws_s3_bucket" "trail" {
   bucket        = "${local.name_prefix}-cloudtrail-${local.suffix}"
   force_destroy = true # sandbox only
@@ -100,10 +102,16 @@ resource "aws_s3_bucket_policy" "trail" {
 resource "aws_cloudtrail" "main" {
   name                          = local.trail_name
   s3_bucket_name                = aws_s3_bucket.trail.id
+  sns_topic_name                = aws_sns_topic.compliance_alerts.name
   kms_key_id                    = aws_kms_key.evidence_key.arn
   is_multi_region_trail         = true
   include_global_service_events = true
   enable_log_file_validation    = true
 
-  depends_on = [aws_s3_bucket_policy.trail]
+  # CKV2_AWS_10: real-time delivery to CloudWatch Logs, alongside the S3
+  # archive above — see terraform/monitoring.tf for the log group + role.
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+  cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail_logs.arn
+
+  depends_on = [aws_s3_bucket_policy.trail, aws_sns_topic_policy.compliance_alerts, aws_iam_role_policy.cloudtrail_logs]
 }

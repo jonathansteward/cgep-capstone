@@ -8,10 +8,31 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# Explicit key policy (checkov CKV2_AWS_64: a KMS key must define its own
+# policy, not rely on AWS's implicit default). The single AccountAdmin
+# statement is the same "enable IAM policies" root grant every CMK needs;
+# it lets account IAM policies (the Lambda role's inline policy, in this
+# case) govern who can actually use the key — no per-service statement is
+# needed here because S3/DynamoDB/SQS encrypt on behalf of the calling IAM
+# principal, not as their own service principal (unlike CloudTrail/logs
+# below, which act as AWS services in their own right).
+data "aws_iam_policy_document" "data_key" {
+  statement {
+    sid       = "AccountAdmin"
+    actions   = ["kms:*"]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+}
+
 resource "aws_kms_key" "data" {
   description             = "Acme Health PHI data key"
   enable_key_rotation     = true
   deletion_window_in_days = 7
+  policy                  = data.aws_iam_policy_document.data_key.json
 }
 
 resource "aws_kms_alias" "data" {
@@ -19,6 +40,15 @@ resource "aws_kms_alias" "data" {
   target_key_id = aws_kms_key.data.key_id
 }
 
+# A KMS key policy's Resource is always "*" — the policy document is scoped
+# to the key it is attached to, there is no ARN to further restrict Resource
+# to, and the AccountAdmin statement is the standard AWS "enable IAM
+# policies" root grant every CMK needs so IAM (not just this key policy)
+# can govern access. Least privilege here is enforced by Principal, not
+# Resource.
+#checkov:skip=CKV_AWS_111:KMS key policy Resource is always "*", see comment above
+#checkov:skip=CKV_AWS_356:KMS key policy Resource is always "*", see comment above
+#checkov:skip=CKV_AWS_109:standard AWS root-account KMS key policy grant, see comment above
 data "aws_iam_policy_document" "evidence_key" {
   statement {
     sid       = "AccountAdmin"
@@ -42,6 +72,16 @@ data "aws_iam_policy_document" "evidence_key" {
       test     = "StringEquals"
       variable = "aws:SourceArn"
       values   = ["arn:aws:cloudtrail:${var.aws_region}:${data.aws_caller_identity.current.account_id}:trail/${local.name_prefix}-trail"]
+    }
+  }
+
+  statement {
+    sid       = "CloudTrailSNSEncrypt"
+    actions   = ["kms:GenerateDataKey*", "kms:Decrypt*", "kms:DescribeKey"]
+    resources = ["*"]
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
     }
   }
 

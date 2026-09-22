@@ -4,6 +4,8 @@
 # SOC 2 CC7.2 (monitoring evidence), A1.2 (retention/recoverability).
 ######################################################################
 
+# CKV_AWS_144 (cross-region replication) is skipped in .checkov.yaml —
+# see the same note on aws_s3_bucket.uploads in main.tf.
 resource "aws_s3_bucket" "vault" {
   bucket              = "${local.name_prefix}-evidence-vault-${local.suffix}"
   object_lock_enabled = true # must be set at creation

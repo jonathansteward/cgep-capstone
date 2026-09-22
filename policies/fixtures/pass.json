@@ -240,9 +240,23 @@
     {
      "address": "aws_cloudtrail.main",
      "depends_on": [
-      "aws_s3_bucket_policy.trail"
+      "aws_s3_bucket_policy.trail",
+      "aws_sns_topic_policy.compliance_alerts",
+      "aws_iam_role_policy.cloudtrail_logs"
      ],
      "expressions": {
+      "cloud_watch_logs_group_arn": {
+       "references": [
+        "aws_cloudwatch_log_group.cloudtrail.arn",
+        "aws_cloudwatch_log_group.cloudtrail"
+       ]
+      },
+      "cloud_watch_logs_role_arn": {
+       "references": [
+        "aws_iam_role.cloudtrail_logs.arn",
+        "aws_iam_role.cloudtrail_logs"
+       ]
+      },
       "enable_log_file_validation": {
        "constant_value": true
       },
@@ -268,6 +282,12 @@
         "aws_s3_bucket.trail.id",
         "aws_s3_bucket.trail"
        ]
+      },
+      "sns_topic_name": {
+       "references": [
+        "aws_sns_topic.compliance_alerts.name",
+        "aws_sns_topic.compliance_alerts"
+       ]
       }
      },
      "mode": "managed",
@@ -275,6 +295,51 @@
      "provider_config_key": "aws",
      "schema_version": 1,
      "type": "aws_cloudtrail"
+    },
+    {
+     "address": "aws_cloudwatch_event_rule.config_noncompliant",
+     "expressions": {
+      "description": {
+       "constant_value": "Fires when any targeted compliance Config rule goes NON_COMPLIANT."
+      },
+      "event_pattern": {},
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "config_noncompliant",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_cloudwatch_event_rule"
+    },
+    {
+     "address": "aws_cloudwatch_event_target.config_noncompliant_sns",
+     "expressions": {
+      "arn": {
+       "references": [
+        "aws_sns_topic.compliance_alerts.arn",
+        "aws_sns_topic.compliance_alerts"
+       ]
+      },
+      "rule": {
+       "references": [
+        "aws_cloudwatch_event_rule.config_noncompliant.name",
+        "aws_cloudwatch_event_rule.config_noncompliant"
+       ]
+      },
+      "target_id": {
+       "constant_value": "compliance-alerts"
+      }
+     },
+     "mode": "managed",
+     "name": "config_noncompliant_sns",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_cloudwatch_event_target"
     },
     {
      "address": "aws_cloudwatch_log_group.api_access",
@@ -300,6 +365,354 @@
      "provider_config_key": "aws",
      "schema_version": 0,
      "type": "aws_cloudwatch_log_group"
+    },
+    {
+     "address": "aws_cloudwatch_log_group.cloudtrail",
+     "expressions": {
+      "kms_key_id": {
+       "references": [
+        "aws_kms_key.evidence_key.arn",
+        "aws_kms_key.evidence_key"
+       ]
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "retention_in_days": {
+       "constant_value": 365
+      }
+     },
+     "mode": "managed",
+     "name": "cloudtrail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_cloudwatch_log_group"
+    },
+    {
+     "address": "aws_cloudwatch_log_group.vpc_flow_logs",
+     "expressions": {
+      "kms_key_id": {
+       "references": [
+        "aws_kms_key.evidence_key.arn",
+        "aws_kms_key.evidence_key"
+       ]
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "retention_in_days": {
+       "constant_value": 365
+      }
+     },
+     "mode": "managed",
+     "name": "vpc_flow_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_cloudwatch_log_group"
+    },
+    {
+     "address": "aws_config_config_rule.api_gw_logging",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "source": [
+       {
+        "owner": {
+         "constant_value": "AWS"
+        },
+        "source_identifier": {
+         "constant_value": "API_GW_EXECUTION_LOGGING_ENABLED"
+        }
+       }
+      ],
+      "tags": {
+       "constant_value": {
+        "Control": "CC7.2",
+        "Gap": "GAP-08"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "api_gw_logging",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_config_config_rule"
+    },
+    {
+     "address": "aws_config_config_rule.cloudtrail_enabled",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "source": [
+       {
+        "owner": {
+         "constant_value": "AWS"
+        },
+        "source_identifier": {
+         "constant_value": "CLOUD_TRAIL_ENABLED"
+        }
+       }
+      ],
+      "tags": {
+       "constant_value": {
+        "Control": "CC7.2"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "cloudtrail_enabled",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_config_config_rule"
+    },
+    {
+     "address": "aws_config_config_rule.dynamodb_cmk",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "source": [
+       {
+        "owner": {
+         "constant_value": "AWS"
+        },
+        "source_identifier": {
+         "constant_value": "DYNAMODB_TABLE_ENCRYPTED_KMS"
+        }
+       }
+      ],
+      "tags": {
+       "constant_value": {
+        "Control": "CC6.1",
+        "Gap": "GAP-02"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "dynamodb_cmk",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_config_config_rule"
+    },
+    {
+     "address": "aws_config_config_rule.iam_no_admin",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "source": [
+       {
+        "owner": {
+         "constant_value": "AWS"
+        },
+        "source_identifier": {
+         "constant_value": "IAM_POLICY_NO_STATEMENTS_WITH_ADMIN_ACCESS"
+        }
+       }
+      ],
+      "tags": {
+       "constant_value": {
+        "Control": "CC6.3",
+        "Gap": "GAP-07"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "iam_no_admin",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_config_config_rule"
+    },
+    {
+     "address": "aws_config_config_rule.lambda_in_vpc",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "source": [
+       {
+        "owner": {
+         "constant_value": "AWS"
+        },
+        "source_identifier": {
+         "constant_value": "LAMBDA_INSIDE_VPC"
+        }
+       }
+      ],
+      "tags": {
+       "constant_value": {
+        "Control": "CC6.6",
+        "Gap": "GAP-05"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "lambda_in_vpc",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_config_config_rule"
+    },
+    {
+     "address": "aws_config_config_rule.s3_sse",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "scope": [
+       {
+        "compliance_resource_types": {
+         "constant_value": [
+          "AWS::S3::Bucket"
+         ]
+        }
+       }
+      ],
+      "source": [
+       {
+        "owner": {
+         "constant_value": "AWS"
+        },
+        "source_identifier": {
+         "constant_value": "S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED"
+        }
+       }
+      ],
+      "tags": {
+       "constant_value": {
+        "Control": "CC6.1",
+        "Gap": "GAP-01"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "s3_sse",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_config_config_rule"
+    },
+    {
+     "address": "aws_config_config_rule.s3_tls_only",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "scope": [
+       {
+        "compliance_resource_types": {
+         "constant_value": [
+          "AWS::S3::Bucket"
+         ]
+        }
+       }
+      ],
+      "source": [
+       {
+        "owner": {
+         "constant_value": "AWS"
+        },
+        "source_identifier": {
+         "constant_value": "S3_BUCKET_SSL_REQUESTS_ONLY"
+        }
+       }
+      ],
+      "tags": {
+       "constant_value": {
+        "Control": "CC6.7",
+        "Gap": "GAP-03"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "s3_tls_only",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_config_config_rule"
+    },
+    {
+     "address": "aws_config_config_rule.s3_versioning",
+     "expressions": {
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "scope": [
+       {
+        "compliance_resource_types": {
+         "constant_value": [
+          "AWS::S3::Bucket"
+         ]
+        }
+       }
+      ],
+      "source": [
+       {
+        "owner": {
+         "constant_value": "AWS"
+        },
+        "source_identifier": {
+         "constant_value": "S3_BUCKET_VERSIONING_ENABLED"
+        }
+       }
+      ],
+      "tags": {
+       "constant_value": {
+        "Control": "A1.2",
+        "Gap": "GAP-04"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "s3_versioning",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_config_config_rule"
+    },
+    {
+     "address": "aws_default_security_group.main",
+     "expressions": {
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "main",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_default_security_group"
     },
     {
      "address": "aws_dynamodb_table.intake",
@@ -354,6 +767,84 @@
      "type": "aws_dynamodb_table"
     },
     {
+     "address": "aws_flow_log.vpc",
+     "expressions": {
+      "iam_role_arn": {
+       "references": [
+        "aws_iam_role.flow_logs.arn",
+        "aws_iam_role.flow_logs"
+       ]
+      },
+      "log_destination": {
+       "references": [
+        "aws_cloudwatch_log_group.vpc_flow_logs.arn",
+        "aws_cloudwatch_log_group.vpc_flow_logs"
+       ]
+      },
+      "log_destination_type": {
+       "constant_value": "cloud-watch-logs"
+      },
+      "traffic_type": {
+       "constant_value": "ALL"
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.main.id",
+        "aws_vpc.main"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "vpc",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_flow_log"
+    },
+    {
+     "address": "aws_iam_role.cloudtrail_logs",
+     "expressions": {
+      "assume_role_policy": {
+       "references": [
+        "data.aws_iam_policy_document.cloudtrail_logs_assume.json",
+        "data.aws_iam_policy_document.cloudtrail_logs_assume"
+       ]
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "cloudtrail_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role"
+    },
+    {
+     "address": "aws_iam_role.flow_logs",
+     "expressions": {
+      "assume_role_policy": {
+       "references": [
+        "data.aws_iam_policy_document.flow_logs_assume.json",
+        "data.aws_iam_policy_document.flow_logs_assume"
+       ]
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "flow_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role"
+    },
+    {
      "address": "aws_iam_role.lambda",
      "expressions": {
       "assume_role_policy": {},
@@ -369,6 +860,56 @@
      "provider_config_key": "aws",
      "schema_version": 0,
      "type": "aws_iam_role"
+    },
+    {
+     "address": "aws_iam_role_policy.cloudtrail_logs",
+     "expressions": {
+      "name": {
+       "constant_value": "cloudtrail-logs-write"
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.cloudtrail_logs.json",
+        "data.aws_iam_policy_document.cloudtrail_logs"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.cloudtrail_logs.id",
+        "aws_iam_role.cloudtrail_logs"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "cloudtrail_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role_policy"
+    },
+    {
+     "address": "aws_iam_role_policy.flow_logs",
+     "expressions": {
+      "name": {
+       "constant_value": "flow-logs-write"
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.flow_logs.json",
+        "data.aws_iam_policy_document.flow_logs"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.flow_logs.id",
+        "aws_iam_role.flow_logs"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "flow_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_role_policy"
     },
     {
      "address": "aws_iam_role_policy.lambda_inline",
@@ -528,6 +1069,12 @@
       },
       "enable_key_rotation": {
        "constant_value": true
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.data_key.json",
+        "data.aws_iam_policy_document.data_key"
+       ]
       }
      },
      "mode": "managed",
@@ -604,6 +1151,12 @@
       },
       "handler": {
        "constant_value": "handler.handler"
+      },
+      "kms_key_arn": {
+       "references": [
+        "aws_kms_key.data.arn",
+        "aws_kms_key.data"
+       ]
       },
       "reserved_concurrent_executions": {
        "references": [
@@ -787,6 +1340,27 @@
      "type": "aws_route_table_association"
     },
     {
+     "address": "aws_s3_bucket.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      },
+      "tags": {
+       "constant_value": {
+        "Purpose": "s3-access-log-destination"
+       }
+      }
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket"
+    },
+    {
      "address": "aws_s3_bucket.trail",
      "expressions": {
       "bucket": {
@@ -841,6 +1415,337 @@
      "type": "aws_s3_bucket"
     },
     {
+     "address": "aws_s3_bucket_lifecycle_configuration.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "rule": [
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "expiration": [
+         {
+          "days": {
+           "constant_value": 365
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "expire-old-access-logs"
+        },
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_s3_bucket_lifecycle_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_lifecycle_configuration.trail",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.trail.id",
+        "aws_s3_bucket.trail"
+       ]
+      },
+      "rule": [
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "abort-incomplete-multipart-uploads"
+        },
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_s3_bucket_lifecycle_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_lifecycle_configuration.uploads",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.uploads.id",
+        "aws_s3_bucket.uploads"
+       ]
+      },
+      "rule": [
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "abort-incomplete-multipart-uploads"
+        },
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "uploads",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_s3_bucket_lifecycle_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_lifecycle_configuration.vault",
+     "depends_on": [
+      "aws_s3_bucket_versioning.vault"
+     ],
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.vault.id",
+        "aws_s3_bucket.vault"
+       ]
+      },
+      "rule": [
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "abort-incomplete-multipart-uploads"
+        },
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 1,
+     "type": "aws_s3_bucket_lifecycle_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_logging.trail",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.trail.id",
+        "aws_s3_bucket.trail"
+       ]
+      },
+      "target_bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "target_prefix": {
+       "constant_value": "cloudtrail-bucket/"
+      }
+     },
+     "mode": "managed",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_logging"
+    },
+    {
+     "address": "aws_s3_bucket_logging.uploads",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.uploads.id",
+        "aws_s3_bucket.uploads"
+       ]
+      },
+      "target_bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "target_prefix": {
+       "constant_value": "uploads/"
+      }
+     },
+     "mode": "managed",
+     "name": "uploads",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_logging"
+    },
+    {
+     "address": "aws_s3_bucket_logging.vault",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.vault.id",
+        "aws_s3_bucket.vault"
+       ]
+      },
+      "target_bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "target_prefix": {
+       "constant_value": "vault/"
+      }
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_logging"
+    },
+    {
+     "address": "aws_s3_bucket_notification.trail",
+     "depends_on": [
+      "aws_sns_topic_policy.compliance_alerts"
+     ],
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.trail.id",
+        "aws_s3_bucket.trail"
+       ]
+      },
+      "topic": [
+       {
+        "events": {
+         "constant_value": [
+          "s3:ObjectCreated:*"
+         ]
+        },
+        "topic_arn": {
+         "references": [
+          "aws_sns_topic.compliance_alerts.arn",
+          "aws_sns_topic.compliance_alerts"
+         ]
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "trail",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_notification"
+    },
+    {
+     "address": "aws_s3_bucket_notification.uploads",
+     "depends_on": [
+      "aws_sns_topic_policy.compliance_alerts"
+     ],
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.uploads.id",
+        "aws_s3_bucket.uploads"
+       ]
+      },
+      "topic": [
+       {
+        "events": {
+         "constant_value": [
+          "s3:ObjectCreated:*"
+         ]
+        },
+        "topic_arn": {
+         "references": [
+          "aws_sns_topic.compliance_alerts.arn",
+          "aws_sns_topic.compliance_alerts"
+         ]
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "uploads",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_notification"
+    },
+    {
+     "address": "aws_s3_bucket_notification.vault",
+     "depends_on": [
+      "aws_sns_topic_policy.compliance_alerts"
+     ],
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.vault.id",
+        "aws_s3_bucket.vault"
+       ]
+      },
+      "topic": [
+       {
+        "events": {
+         "constant_value": [
+          "s3:ObjectCreated:*"
+         ]
+        },
+        "topic_arn": {
+         "references": [
+          "aws_sns_topic.compliance_alerts.arn",
+          "aws_sns_topic.compliance_alerts"
+         ]
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "vault",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_notification"
+    },
+    {
      "address": "aws_s3_bucket_object_lock_configuration.vault",
      "depends_on": [
       "aws_s3_bucket_versioning.vault"
@@ -876,6 +1781,28 @@
      "provider_config_key": "aws",
      "schema_version": 0,
      "type": "aws_s3_bucket_object_lock_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_policy.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.access_logs.json",
+        "data.aws_iam_policy_document.access_logs"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_policy"
     },
     {
      "address": "aws_s3_bucket_policy.trail",
@@ -942,6 +1869,34 @@
      "provider_config_key": "aws",
      "schema_version": 0,
      "type": "aws_s3_bucket_policy"
+    },
+    {
+     "address": "aws_s3_bucket_public_access_block.access_logs",
+     "expressions": {
+      "block_public_acls": {
+       "constant_value": true
+      },
+      "block_public_policy": {
+       "constant_value": true
+      },
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "ignore_public_acls": {
+       "constant_value": true
+      },
+      "restrict_public_buckets": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_public_access_block"
     },
     {
      "address": "aws_s3_bucket_public_access_block.trail",
@@ -1026,6 +1981,33 @@
      "provider_config_key": "aws",
      "schema_version": 0,
      "type": "aws_s3_bucket_public_access_block"
+    },
+    {
+     "address": "aws_s3_bucket_server_side_encryption_configuration.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "rule": [
+       {
+        "apply_server_side_encryption_by_default": [
+         {
+          "sse_algorithm": {
+           "constant_value": "AES256"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_server_side_encryption_configuration"
     },
     {
      "address": "aws_s3_bucket_server_side_encryption_configuration.trail",
@@ -1136,6 +2118,29 @@
      "type": "aws_s3_bucket_server_side_encryption_configuration"
     },
     {
+     "address": "aws_s3_bucket_versioning.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "versioning_configuration": [
+       {
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_s3_bucket_versioning"
+    },
+    {
      "address": "aws_s3_bucket_versioning.trail",
      "expressions": {
       "bucket": {
@@ -1230,6 +2235,50 @@
      "type": "aws_security_group"
     },
     {
+     "address": "aws_sns_topic.compliance_alerts",
+     "expressions": {
+      "kms_master_key_id": {
+       "references": [
+        "aws_kms_key.evidence_key.id",
+        "aws_kms_key.evidence_key"
+       ]
+      },
+      "name": {
+       "references": [
+        "local.name_prefix",
+        "local.suffix"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "compliance_alerts",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_sns_topic"
+    },
+    {
+     "address": "aws_sns_topic_policy.compliance_alerts",
+     "expressions": {
+      "arn": {
+       "references": [
+        "aws_sns_topic.compliance_alerts.arn",
+        "aws_sns_topic.compliance_alerts"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.compliance_alerts_topic.json",
+        "data.aws_iam_policy_document.compliance_alerts_topic"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "compliance_alerts",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_sns_topic_policy"
+    },
+    {
      "address": "aws_sqs_queue.dlq",
      "expressions": {
       "kms_master_key_id": {
@@ -1310,7 +2359,7 @@
        ]
       },
       "map_public_ip_on_launch": {
-       "constant_value": true
+       "constant_value": false
       },
       "tags": {
        "references": [
@@ -1529,6 +2578,353 @@
      "type": "aws_caller_identity"
     },
     {
+     "address": "data.aws_iam_policy_document.access_logs",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "s3:PutObject"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "ArnLike"
+          },
+          "values": {
+           "references": [
+            "aws_s3_bucket.uploads.arn",
+            "aws_s3_bucket.uploads",
+            "aws_s3_bucket.vault.arn",
+            "aws_s3_bucket.vault",
+            "aws_s3_bucket.trail.arn",
+            "aws_s3_bucket.trail"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceArn"
+          }
+         },
+         {
+          "test": {
+           "constant_value": "StringEquals"
+          },
+          "values": {
+           "references": [
+            "data.aws_caller_identity.current.account_id",
+            "data.aws_caller_identity.current"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceAccount"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "logging.s3.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.access_logs.arn",
+          "aws_s3_bucket.access_logs"
+         ]
+        },
+        "sid": {
+         "constant_value": "S3ServerAccessLogsPolicy"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "s3:*"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "Bool"
+          },
+          "values": {
+           "constant_value": [
+            "false"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SecureTransport"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.access_logs.arn",
+          "aws_s3_bucket.access_logs",
+          "aws_s3_bucket.access_logs.arn",
+          "aws_s3_bucket.access_logs"
+         ]
+        },
+        "sid": {
+         "constant_value": "DenyInsecureTransport"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.cloudtrail_logs",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+         ]
+        },
+        "resources": {
+         "references": [
+          "aws_cloudwatch_log_group.cloudtrail.arn",
+          "aws_cloudwatch_log_group.cloudtrail"
+         ]
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "cloudtrail_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.cloudtrail_logs_assume",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "sts:AssumeRole"
+         ]
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "cloudtrail.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "cloudtrail_logs_assume",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.compliance_alerts_topic",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "sns:Publish"
+         ]
+        },
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "events.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_sns_topic.compliance_alerts.arn",
+          "aws_sns_topic.compliance_alerts"
+         ]
+        },
+        "sid": {
+         "constant_value": "AllowEventBridgePublish"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "sns:Publish"
+         ]
+        },
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "cloudtrail.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_sns_topic.compliance_alerts.arn",
+          "aws_sns_topic.compliance_alerts"
+         ]
+        },
+        "sid": {
+         "constant_value": "AllowCloudTrailPublish"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "sns:Publish"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "ArnLike"
+          },
+          "values": {
+           "references": [
+            "aws_s3_bucket.uploads.arn",
+            "aws_s3_bucket.uploads",
+            "aws_s3_bucket.vault.arn",
+            "aws_s3_bucket.vault",
+            "aws_s3_bucket.trail.arn",
+            "aws_s3_bucket.trail"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceArn"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "s3.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_sns_topic.compliance_alerts.arn",
+          "aws_sns_topic.compliance_alerts"
+         ]
+        },
+        "sid": {
+         "constant_value": "AllowS3Publish"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "compliance_alerts_topic",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.data_key",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "kms:*"
+         ]
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "references": [
+            "data.aws_caller_identity.current.account_id",
+            "data.aws_caller_identity.current"
+           ]
+          },
+          "type": {
+           "constant_value": "AWS"
+          }
+         }
+        ],
+        "resources": {
+         "constant_value": [
+          "*"
+         ]
+        },
+        "sid": {
+         "constant_value": "AccountAdmin"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "data_key",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
      "address": "data.aws_iam_policy_document.evidence_key",
      "expressions": {
       "statement": [
@@ -1609,6 +3005,35 @@
        {
         "actions": {
          "constant_value": [
+          "kms:GenerateDataKey*",
+          "kms:Decrypt*",
+          "kms:DescribeKey"
+         ]
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "cloudtrail.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "constant_value": [
+          "*"
+         ]
+        },
+        "sid": {
+         "constant_value": "CloudTrailSNSEncrypt"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
           "kms:Encrypt*",
           "kms:Decrypt*",
           "kms:ReEncrypt*",
@@ -1658,6 +3083,65 @@
      },
      "mode": "data",
      "name": "evidence_key",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.flow_logs",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+         ]
+        },
+        "resources": {
+         "references": [
+          "aws_cloudwatch_log_group.vpc_flow_logs.arn",
+          "aws_cloudwatch_log_group.vpc_flow_logs"
+         ]
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "flow_logs",
+     "provider_config_key": "aws",
+     "schema_version": 0,
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.flow_logs_assume",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "sts:AssumeRole"
+         ]
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "vpc-flow-logs.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "flow_logs_assume",
      "provider_config_key": "aws",
      "schema_version": 0,
      "type": "aws_iam_policy_document"
@@ -2110,7 +3594,8 @@
      "description": "Object Lock mode for the evidence vault. GOVERNANCE for the sandbox; COMPLIANCE is irreversible until retention expires."
     },
     "evidence_retention_days": {
-     "default": 1
+     "default": 30,
+     "description": "Default Object Lock retention for new evidence objects (governance mode; applies to objects written after a change)."
     },
     "lambda_reserved_concurrency": {
      "default": -1,

@@ -100,10 +100,11 @@ resource "aws_s3_bucket_policy" "trail" {
 resource "aws_cloudtrail" "main" {
   name                          = local.trail_name
   s3_bucket_name                = aws_s3_bucket.trail.id
+  sns_topic_name                = aws_sns_topic.compliance_alerts.name
   kms_key_id                    = aws_kms_key.evidence_key.arn
   is_multi_region_trail         = true
   include_global_service_events = true
   enable_log_file_validation    = true
 
-  depends_on = [aws_s3_bucket_policy.trail]
+  depends_on = [aws_s3_bucket_policy.trail, aws_sns_topic_policy.compliance_alerts]
 }

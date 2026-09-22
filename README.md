@@ -6,7 +6,7 @@ Design decisions, gap-by-gap results and known limits are in [WRITEUP.md](WRITEU
 
 | Layer | Where |
 |---|---|
-| 1. GRC baseline (Terraform) | `terraform/kms.tf`, `evidence_vault.tf`, `cloudtrail.tf`, `workload_hardening.tf`, in-place edits in `main.tf`; `bootstrap/` (state bucket, GitHub OIDC roles) |
+| 1. GRC baseline (Terraform) | `terraform/kms.tf`, `evidence_vault.tf`, `cloudtrail.tf`, `workload_hardening.tf`, `monitoring.tf` (Config rules + SNS/EventBridge alerting), in-place edits in `main.tf`; `bootstrap/` (state bucket, GitHub OIDC roles) |
 | 2. OPA policies (Rego) | `policies/soc2/` (9 policies), `policies/fixtures/pass.json`, `scripts/gap-regression.py` |
 | 3. Pipeline (GitHub Actions) | `.github/workflows/grc-gate.yml`, `scripts/bundle-sign-upload.sh`, `scripts/verify-evidence.sh` |
 | 4. OSCAL component | `oscal/components/acme-health-intake.json`, `oscal/profiles/`, `oscal/catalogs/`; regenerate with `scripts/build-oscal.py`, check with `scripts/check-oscal.py` |

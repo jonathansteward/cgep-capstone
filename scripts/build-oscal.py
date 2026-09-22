@@ -126,18 +126,31 @@ reqs = [
         ["cc6_7_s3_tls"], ["GAP-03"], "implemented", MAIN + BLOCKED[:0],
         extra_links=[POL("cc6_7_s3_tls")]),
     req("cc7.2",
-        "Activity is recorded and anomalies are surfaced: a multi-region KMS-encrypted CloudTrail with log-file "
-        "validation, API Gateway access logs (365-day retention) with throttling, Lambda X-Ray tracing and a "
-        "dead-letter queue, and signed evidence written to an Object Lock vault on every pipeline run.",
+        "Activity is recorded, and drift or misconfiguration is detected continuously, not just at CI plan time: a "
+        "multi-region KMS-encrypted CloudTrail with log-file validation, API Gateway access logs (365-day "
+        "retention) with throttling, Lambda X-Ray tracing and a dead-letter queue, signed evidence written to an "
+        "Object Lock vault on every pipeline run, and seven AWS Config managed rules (one per gap-closing control) "
+        "that re-evaluate deployed resources continuously and publish to an SNS topic on NON_COMPLIANT via "
+        "EventBridge.",
         ["aws_cloudtrail.main", "aws_apigatewayv2_stage.default", "aws_cloudwatch_log_group.api_access",
-         "aws_lambda_function.intake", "aws_sqs_queue.dlq", "aws_s3_bucket_object_lock_configuration.vault"],
+         "aws_lambda_function.intake", "aws_sqs_queue.dlq", "aws_s3_bucket_object_lock_configuration.vault",
+         "aws_config_config_rule.s3_sse", "aws_config_config_rule.s3_tls_only",
+         "aws_config_config_rule.s3_versioning", "aws_config_config_rule.dynamodb_cmk",
+         "aws_config_config_rule.lambda_in_vpc", "aws_config_config_rule.iam_no_admin",
+         "aws_config_config_rule.cloudtrail_enabled", "aws_config_config_rule.api_gw_logging",
+         "aws_sns_topic.compliance_alerts", "aws_cloudwatch_event_rule.config_noncompliant"],
         ["cc7_2_cloudtrail", "cc7_2_api_logging", "cc7_2_lambda_observability"], ["GAP-06", "GAP-08"], "partial",
         MAIN + BLOCKED,
         remarks="Not closed: (1) Lambda reserved concurrency, because the account concurrency quota is 10 and AWS "
                 "requires 10 unreserved; it is exposed as var.lambda_reserved_concurrency. (2) WAF, which is not "
-                "supported on HTTP APIs. (3) No alarms or alert routing are defined; detection rules and on-call "
-                "response are an organizational process. The blocked PR run shows the gate refusing a regression.",
-        extra_links=[POL("cc7_2_cloudtrail"), POL("cc7_2_api_logging"), POL("cc7_2_lambda_observability")]),
+                "supported on HTTP APIs. (3) The Config rules were confirmed to evaluate correctly against the "
+                "deployed (compliant) resources after apply, but drift was not simulated live on running "
+                "infrastructure the way scripts/gap-regression.py simulates it against a plan — that is a known "
+                "gap in test depth, distinct from the Rego suite's tested regression. (4) The SNS topic has no "
+                "subscriber configured; wiring an on-call subscription is an organizational step. The blocked PR "
+                "run shows the CI-time gate refusing a regression; the Config rules are the runtime counterpart.",
+        extra_links=[POL("cc7_2_cloudtrail"), POL("cc7_2_api_logging"), POL("cc7_2_lambda_observability"),
+                     {"rel": "reference", "href": "../../terraform/monitoring.tf", "text": "AWS Config rules + EventBridge->SNS alert routing"}]),
     req("a1.2",
         "S3 versioning is enabled on the uploads bucket, DynamoDB point-in-time recovery is on, and the evidence "
         "vault is versioned with Object Lock.",

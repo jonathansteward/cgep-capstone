@@ -55,11 +55,14 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "public" {
-  count                   = 2
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.42.${count.index}.0/24"
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = true
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.42.${count.index}.0/24"
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+  # CKV_AWS_130: nothing is deployed into these subnets (the Lambda runs in
+  # the private subnets over gateway endpoints; see workload_hardening.tf).
+  # No public IP is assigned by default; a future NAT/bastion would opt in.
+  map_public_ip_on_launch = false
 
   tags = { Name = "${local.name_prefix}-public-${count.index}" }
 }
@@ -245,6 +248,12 @@ resource "aws_lambda_function" "intake" {
     aws_iam_role_policy.lambda_inline,
   ]
 
+  # checkov:skip=CKV_AWS_272: code signing requires a signing profile/config
+  # not provided by the starter and out of scope for this capstone; the
+  # supply-chain control this capstone implements is Cosign-signed,
+  # Object-Lock-retained evidence (Layer 3/4), not signed Lambda deploys.
+  kms_key_arn = aws_kms_key.data.arn # CKV_AWS_173: encrypt env vars with the CMK, not the AWS-managed default
+
   environment {
     variables = {
       INTAKE_TABLE  = aws_dynamodb_table.intake.name
@@ -272,6 +281,10 @@ resource "aws_apigatewayv2_integration" "lambda" {
   payload_format_version = "2.0"
 }
 
+# WORKLOAD.md declares "Authentication / authorization at the API layer" out
+# of scope for this capstone ("a capstone extension, not a requirement") —
+# the intake API is intentionally unauthenticated.
+#checkov:skip=CKV_AWS_309:unauthenticated by design, see WORKLOAD.md "out of scope"
 resource "aws_apigatewayv2_route" "intake" {
   api_id    = aws_apigatewayv2_api.intake.id
   route_key = "POST /intake"

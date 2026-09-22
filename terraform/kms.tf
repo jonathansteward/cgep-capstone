@@ -6,7 +6,6 @@
 ######################################################################
 
 data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
 
 # Explicit key policy (checkov CKV2_AWS_64: a KMS key must define its own
 # policy, not rely on AWS's implicit default). The single AccountAdmin

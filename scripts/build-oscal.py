@@ -143,12 +143,15 @@ reqs = [
         MAIN + BLOCKED,
         remarks="Not closed: (1) Lambda reserved concurrency, because the account concurrency quota is 10 and AWS "
                 "requires 10 unreserved; it is exposed as var.lambda_reserved_concurrency. (2) WAF, which is not "
-                "supported on HTTP APIs. (3) The Config rules were confirmed to evaluate correctly against the "
-                "deployed (compliant) resources after apply, but drift was not simulated live on running "
-                "infrastructure the way scripts/gap-regression.py simulates it against a plan — that is a known "
-                "gap in test depth, distinct from the Rego suite's tested regression. (4) The SNS topic has no "
-                "subscriber configured; wiring an on-call subscription is an organizational step. The blocked PR "
-                "run shows the CI-time gate refusing a regression; the Config rules are the runtime counterpart.",
+                "supported on HTTP APIs. (3) The account\'s pre-existing Config recorder excludes IAM resource "
+                "types (set before this capstone, out of its scope to change), so cc6_3\'s Config counterpart "
+                "(iam-no-admin) can never report compliance data from this recorder; the Rego policy "
+                "(cc6_3_iam_least_privilege) is unaffected and still enforced in CI. (4) Drift was not simulated "
+                "live on running infrastructure the way scripts/gap-regression.py simulates it against a plan — "
+                "that is a known gap in test depth, distinct from the Rego suite\'s tested regression. (5) The SNS "
+                "topic has no subscriber configured; wiring an on-call subscription is an organizational step. See "
+                "WRITEUP.md \"Continuous monitoring\" for two real bugs found and fixed while deploying this layer "
+                "(recorder never started; two aws_sns_topic_policy resources on one topic overwriting each other).",
         extra_links=[POL("cc7_2_cloudtrail"), POL("cc7_2_api_logging"), POL("cc7_2_lambda_observability"),
                      {"rel": "reference", "href": "../../terraform/monitoring.tf", "text": "AWS Config rules + EventBridge->SNS alert routing"}]),
     req("a1.2",

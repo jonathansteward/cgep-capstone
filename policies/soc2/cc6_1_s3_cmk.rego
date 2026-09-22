@@ -17,7 +17,15 @@ import rego.v1
 deny contains msg if {
 	some b in lib.resources("aws_s3_bucket")
 	not encrypted_with_cmk(b)
+	not is_log_delivery_destination(b)
 	msg := sprintf("[SOC2 CC6.1] %s: bucket is not encrypted with a customer-managed KMS key (GAP-01). Add an aws:kms SSE configuration.", [lib.addr(b)])
+}
+
+# S3 server access log delivery only supports SSE-S3 on the destination
+# bucket, not a customer CMK (an AWS platform constraint). A bucket tagged
+# as such is exempt from this control; see terraform/logging.tf.
+is_log_delivery_destination(b) if {
+	b.expressions.tags.constant_value.Purpose == "s3-access-log-destination"
 }
 
 encrypted_with_cmk(b) if {

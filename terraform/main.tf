@@ -139,6 +139,10 @@ resource "aws_dynamodb_table" "intake" {
 # The "gaps" here are real residual gaps once those defaults are in place.
 ######################################################################
 
+# CKV_AWS_144 (cross-region replication) is skipped in .checkov.yaml:
+# WORKLOAD.md declares "Multi-region failover" out of scope for this
+# capstone. Replication would also need a destination bucket + IAM role
+# in a second region.
 resource "aws_s3_bucket" "uploads" {
   bucket = "${local.name_prefix}-uploads-${local.suffix}"
 }

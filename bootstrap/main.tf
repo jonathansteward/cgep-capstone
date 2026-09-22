@@ -18,16 +18,6 @@ variable "aws_region" {
   default = "us-east-1"
 }
 
-variable "github_org" {
-  type    = string
-  default = "jonathansteward"
-}
-
-variable "github_repo" {
-  type    = string
-  default = "cgep-capstone"
-}
-
 provider "aws" {
   region = var.aws_region
   default_tags {

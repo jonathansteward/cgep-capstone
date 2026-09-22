@@ -1,6 +1,6 @@
 # Terraform
 .terraform/
-.terraform.lock.hcl
+# .terraform.lock.hcl is committed (dependency pinning) — see terraform/ and bootstrap/
 *.tfstate
 *.tfstate.*
 *.tfvars

@@ -38,6 +38,16 @@ test_s3_cmk_fail_no_sse if count(cc6_1_s3_cmk.deny) == 1 with input as cfg([buck
 
 test_s3_cmk_fail_sse_s3 if count(cc6_1_s3_cmk.deny) == 1 with input as cfg([bucket, sse("AES256")])
 
+test_s3_cmk_pass_log_delivery_destination_exempt if {
+	tagged := res("aws_s3_bucket", "logs", {"tags": {"constant_value": {"Purpose": "s3-access-log-destination"}}})
+	count(cc6_1_s3_cmk.deny) == 0 with input as cfg([tagged])
+}
+
+test_s3_cmk_fail_wrong_tag_not_exempt if {
+	tagged := res("aws_s3_bucket", "logs", {"tags": {"constant_value": {"Purpose": "something-else"}}})
+	count(cc6_1_s3_cmk.deny) == 1 with input as cfg([tagged])
+}
+
 # ---- CC6.1 DynamoDB CMK (GAP-02) ----
 test_ddb_cmk_pass if {
 	t := res("aws_dynamodb_table", "t", {"server_side_encryption": [{

@@ -21,6 +21,13 @@ resource "aws_sns_topic" "compliance_alerts" {
   kms_master_key_id = aws_kms_key.evidence_key.id
 }
 
+# A single topic can only have one resource policy. Every principal that
+# needs to publish (EventBridge, CloudTrail, S3 — see the S3 event
+# notification statement further down) is a statement in this one
+# document, applied by the one aws_sns_topic_policy resource below. Two
+# separate aws_sns_topic_policy resources on the same topic ARN would
+# silently overwrite each other on alternating applies instead of merging
+# — caught via `terraform plan` showing perpetual drift during review.
 data "aws_iam_policy_document" "compliance_alerts_topic" {
   statement {
     sid       = "AllowEventBridgePublish"
@@ -41,6 +48,26 @@ data "aws_iam_policy_document" "compliance_alerts_topic" {
     principals {
       type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid       = "AllowS3Publish"
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.compliance_alerts.arn]
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values = [
+        aws_s3_bucket.uploads.arn,
+        aws_s3_bucket.vault.arn,
+        aws_s3_bucket.trail.arn,
+      ]
     }
   }
 }
@@ -155,4 +182,136 @@ resource "aws_config_config_rule" "api_gw_logging" {
     source_identifier = "API_GW_EXECUTION_LOGGING_ENABLED"
   }
   tags = { Gap = "GAP-08", Control = "CC7.2" }
+}
+
+######################################################################
+# VPC flow logs (CC7.2 / checkov CKV2_AWS_11) and a locked-down default
+# security group (checkov CKV2_AWS_12).
+######################################################################
+
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  name              = "/aws/vpc-flow-logs/${local.name_prefix}-${local.suffix}"
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.evidence_key.arn
+}
+
+data "aws_iam_policy_document" "flow_logs_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["vpc-flow-logs.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "flow_logs" {
+  name               = "${local.name_prefix}-flow-logs-${local.suffix}"
+  assume_role_policy = data.aws_iam_policy_document.flow_logs_assume.json
+}
+
+data "aws_iam_policy_document" "flow_logs" {
+  statement {
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogGroups", "logs:DescribeLogStreams"]
+    resources = ["${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"]
+  }
+}
+
+resource "aws_iam_role_policy" "flow_logs" {
+  name   = "flow-logs-write"
+  role   = aws_iam_role.flow_logs.id
+  policy = data.aws_iam_policy_document.flow_logs.json
+}
+
+resource "aws_flow_log" "vpc" {
+  vpc_id               = aws_vpc.main.id
+  traffic_type         = "ALL"
+  log_destination_type = "cloud-watch-logs"
+  log_destination      = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  iam_role_arn         = aws_iam_role.flow_logs.arn
+}
+
+# Every VPC gets a default security group whether we reference it or not;
+# lock it down explicitly rather than leave the AWS default (which allows
+# all traffic between anything attached to it).
+resource "aws_default_security_group" "main" {
+  vpc_id = aws_vpc.main.id
+  # No ingress/egress blocks: deny-by-default.
+}
+
+######################################################################
+# CloudTrail -> CloudWatch Logs (checkov CKV2_AWS_10): real-time log
+# delivery in addition to the S3 archive, so CloudWatch-based alarms and
+# Log Insights queries can run against trail events without an S3 read.
+######################################################################
+
+resource "aws_cloudwatch_log_group" "cloudtrail" {
+  name              = "/aws/cloudtrail/${local.name_prefix}-${local.suffix}"
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.evidence_key.arn
+}
+
+data "aws_iam_policy_document" "cloudtrail_logs_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "cloudtrail_logs" {
+  name               = "${local.name_prefix}-cloudtrail-logs-${local.suffix}"
+  assume_role_policy = data.aws_iam_policy_document.cloudtrail_logs_assume.json
+}
+
+data "aws_iam_policy_document" "cloudtrail_logs" {
+  statement {
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["${aws_cloudwatch_log_group.cloudtrail.arn}:*"]
+  }
+}
+
+resource "aws_iam_role_policy" "cloudtrail_logs" {
+  name   = "cloudtrail-logs-write"
+  role   = aws_iam_role.cloudtrail_logs.id
+  policy = data.aws_iam_policy_document.cloudtrail_logs.json
+}
+
+######################################################################
+# S3 event notifications (checkov CKV2_AWS_62) on the three
+# compliance-relevant buckets, published to the same alerting topic used
+# for Config drift. A new object landing in the PHI uploads bucket, the
+# evidence vault or the CloudTrail bucket is itself a security-relevant
+# event worth surfacing, distinct from Config's control-state checks.
+######################################################################
+
+# The AllowS3Publish statement lives in data.aws_iam_policy_document.compliance_alerts_topic
+# above, alongside EventBridge and CloudTrail — one topic, one policy resource.
+resource "aws_s3_bucket_notification" "uploads" {
+  bucket = aws_s3_bucket.uploads.id
+  topic {
+    topic_arn = aws_sns_topic.compliance_alerts.arn
+    events    = ["s3:ObjectCreated:*"]
+  }
+  depends_on = [aws_sns_topic_policy.compliance_alerts]
+}
+
+resource "aws_s3_bucket_notification" "vault" {
+  bucket = aws_s3_bucket.vault.id
+  topic {
+    topic_arn = aws_sns_topic.compliance_alerts.arn
+    events    = ["s3:ObjectCreated:*"]
+  }
+  depends_on = [aws_sns_topic_policy.compliance_alerts]
+}
+
+resource "aws_s3_bucket_notification" "trail" {
+  bucket = aws_s3_bucket.trail.id
+  topic {
+    topic_arn = aws_sns_topic.compliance_alerts.arn
+    events    = ["s3:ObjectCreated:*"]
+  }
+  depends_on = [aws_sns_topic_policy.compliance_alerts]
 }
